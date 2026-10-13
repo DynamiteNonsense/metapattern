@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>АДАК: мета-паттерн НЛП. Полный разбор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c1:#FF3D68; --c1s:#FFE4EA; --c1d:#C4123F;
+  --c2:#5B5BF7; --c2s:#E7E7FF; --c2d:#3434C9;
+  --c3:#0FB57D; --c3s:#D9F6EA; --c3d:#06855A;
+  --c4:#FF9F1C; --c4s:#FFF0D9; --c4d:#C46C00;
+  --ink:#15152B; --muted:#5D6079; --line:#E7E8F0; --plate:#F4F5F9; --bg:#FFFFFF;
+  --radius:20px; --radius-s:12px;
+  --shadow:0 1px 2px rgba(21,21,43,.04),0 8px 24px rgba(21,21,43,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+:focus-visible{outline:3px solid var(--c2);outline-offset:2px;border-radius:6px}
+
+/* ---------- top bar ---------- */
+.topbar{position:fixed;inset:0 0 auto 0;height:64px;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--line)}
+.topbar .in{max-width:1200px;margin:0 auto;height:100%;padding:0 24px;display:flex;align-items:center;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.02em;text-decoration:none;font-size:18px}
+.logo .dots{display:flex;gap:3px}
+.logo .dots i{width:10px;height:10px;border-radius:50%;display:block}
+.legend{display:flex;gap:8px;margin-left:auto}
+.legend span{font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.menu-btn{display:none;width:40px;height:40px;border-radius:10px;background:var(--plate);align-items:center;justify-content:center;font-size:20px}
+.progress{position:absolute;left:0;bottom:-1px;height:3px;width:0;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c4))}
+
+/* ---------- layout ---------- */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.layout{display:grid;grid-template-columns:232px 1fr;gap:56px}
+.sidenav{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 104px);overflow:auto;padding:8px 0 24px}
+.sidenav p{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 8px 12px}
+.sidenav a{display:flex;gap:10px;align-items:baseline;padding:7px 12px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:500;color:var(--muted);transition:background .2s,color .2s}
+.sidenav a b{font-size:12px;font-weight:700;opacity:.6;min-width:18px}
+.sidenav a:hover{background:var(--plate);color:var(--ink)}
+.sidenav a.active{background:var(--ink);color:#fff}
+.sidenav a.active b{opacity:.8}
+main{min-width:0}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:136px 0 80px;background:
+ radial-gradient(600px 400px at 8% 20%,rgba(255,61,104,.16),transparent 70%),
+ radial-gradient(520px 420px at 40% 100%,rgba(91,91,247,.16),transparent 70%),
+ radial-gradient(520px 420px at 78% 10%,rgba(15,181,125,.16),transparent 70%),
+ radial-gradient(500px 400px at 100% 80%,rgba(255,159,28,.18),transparent 70%)}
+.hero .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.hero h1{font-size:60px;line-height:1.05;font-weight:900;letter-spacing:-.03em;margin:16px 0 24px}
+.hero h1 .g{background:linear-gradient(90deg,var(--c1),var(--c2) 35%,var(--c3) 65%,var(--c4));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lead{font-size:20px;line-height:1.6;color:var(--muted);max-width:600px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 24px;border-radius:14px;font-weight:700;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn.dark{background:var(--ink);color:#fff;box-shadow:0 8px 24px rgba(21,21,43,.25)}
+.btn.light{background:#fff;border:1px solid var(--line)}
+.letters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px;max-width:600px}
+.letter{border-radius:18px;padding:16px;color:#fff;transition:transform .25s}
+.letter:hover{transform:translateY(-4px) rotate(-1deg)}
+.letter b{display:block;font-size:44px;line-height:1;font-weight:900}
+.letter span{display:block;font-size:13px;font-weight:600;margin-top:8px;opacity:.95;line-height:1.3}
+
+/* ---------- sections ---------- */
+section.sec{padding:96px 0 24px;border-bottom:1px solid var(--line)}
+section.sec:last-of-type{border-bottom:none}
+.sec-head{margin-bottom:40px;max-width:760px}
+.num{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:99px;font-size:13px;font-weight:800;background:var(--plate);color:var(--muted);margin-bottom:16px;letter-spacing:.04em}
+h2{font-size:42px;line-height:1.12;font-weight:800;letter-spacing:-.025em}
+.sec-head p{font-size:19px;color:var(--muted);margin-top:16px}
+h3{font-size:24px;line-height:1.3;font-weight:800;letter-spacing:-.01em;margin:48px 0 16px}
+h4{font-size:18px;line-height:1.4;font-weight:700;margin-bottom:8px}
+p+p{margin-top:12px}
+.muted{color:var(--muted)}
+.small{font-size:15px;line-height:1.6}
+.content p,.content li{max-width:760px}
+ul.list{list-style:none;display:grid;gap:10px;margin:12px 0}
+ul.list li{position:relative;padding-left:26px}
+ul.list li::before{content:"";position:absolute;left:4px;top:.62em;width:9px;height:9px;border-radius:50%;background:var(--dot,var(--ink))}
+ol.steps{list-style:none;counter-reset:s;display:grid;gap:12px;margin:12px 0}
+ol.steps li{counter-increment:s;position:relative;padding-left:44px;min-height:32px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:9px;background:var(--dot,var(--ink));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s}
+.card:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(21,21,43,.04),0 16px 40px rgba(21,21,43,.09)}
+.card .ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.plate{background:var(--plate);border-radius:var(--radius);padding:24px 28px}
+.plate.tint1{background:var(--c1s)}.plate.tint2{background:var(--c2s)}.plate.tint3{background:var(--c3s)}.plate.tint4{background:var(--c4s)}
+.note{display:flex;gap:16px;align-items:flex-start;margin:24px 0}
+.note .em{font-size:24px;line-height:1.2}
+.big-quote{font-size:28px;line-height:1.35;font-weight:800;letter-spacing:-.02em;padding:32px 0 32px 28px;border-left:6px solid;border-image:linear-gradient(var(--c1),var(--c2),var(--c3),var(--c4)) 1;margin:32px 0}
+.big-quote small{display:block;font-size:15px;font-weight:500;color:var(--muted);margin-top:12px;letter-spacing:0}
+
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.t1{background:var(--c1s);color:var(--c1d)}.t2{background:var(--c2s);color:var(--c2d)}.t3{background:var(--c3s);color:var(--c3d)}.t4{background:var(--c4s);color:var(--c4d)}
+.bg1{background:var(--c1)}.bg2{background:var(--c2)}.bg3{background:var(--c3)}.bg4{background:var(--c4)}
+
+/* step hero inside step sections */
+.step-banner{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;border-radius:28px;padding:32px;color:#fff;margin-bottom:40px;position:relative;overflow:hidden}
+.step-banner::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.14)}
+.step-banner .L{font-size:96px;font-weight:900;line-height:.9;width:120px;height:120px;border-radius:28px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+.step-banner h2{color:#fff}
+.step-banner p{font-size:18px;opacity:.95;margin-top:10px;max-width:620px}
+.sb1{background:linear-gradient(135deg,#FF3D68,#FF7A59)}
+.sb2{background:linear-gradient(135deg,#5B5BF7,#8A5CF6)}
+.sb3{background:linear-gradient(135deg,#0FB57D,#22C3B5)}
+.sb4{background:linear-gradient(135deg,#FF9F1C,#FF5E7A)}
+
+/* dialog */
+.dialog{display:grid;gap:10px;margin:16px 0}
+.dialog .who{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.msg{max-width:82%;padding:12px 16px;border-radius:16px;font-size:16px;line-height:1.55}
+.msg.coach{background:var(--plate);border-top-left-radius:4px}
+.msg.client{justify-self:end;border-top-right-radius:4px;background:var(--ink);color:#fff}
+.msg.client .who{color:rgba(255,255,255,.6)}
+.msg em{font-style:normal;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.msg .act{display:block;font-size:13px;color:var(--muted);font-style:italic;margin-top:4px}
+.msg.client .act{color:rgba(255,255,255,.65)}
+.dialog-card{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:#fff}
+.dialog-card>h4{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* compare */
+.compare{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.compare>div{padding:28px}
+.compare .h{font-size:22px;font-weight:800;margin-bottom:12px}
+.compare .a{background:linear-gradient(180deg,var(--c1s),#fff 70%)}
+.compare .d{background:linear-gradient(180deg,var(--c2s),#fff 70%);border-left:1px solid var(--line)}
+.compare .row{padding:12px 0;border-top:1px dashed var(--line)}
+.compare .row small{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+/* checklist (signs) */
+.signs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.signs span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:14px;font-weight:500}
+
+/* cycle */
+.cycle-wrap{display:grid;grid-template-columns:420px 1fr;gap:40px;align-items:center}
+.cycle svg .seg{cursor:pointer;transition:stroke-width .25s,opacity .25s}
+.cycle svg .seg:hover{stroke-width:52}
+.cycle svg.has-active .seg{opacity:.3}
+.cycle svg.has-active .seg.on{opacity:1;stroke-width:54}
+.cycle svg text{pointer-events:none}
+.cycle-panel{border-radius:var(--radius);padding:32px;min-height:340px;background:var(--plate);transition:background .3s}
+.cycle-panel .k{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.cycle-panel h3{margin:8px 0 12px}
+.cycle-nav{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.chip{height:40px;padding:0 16px;border-radius:12px;background:#fff;border:1px solid var(--line);font-weight:700;font-size:14px;transition:all .2s}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* neuro */
+.neuro{border-radius:28px;background:#14142B;color:#fff;padding:32px;margin:32px 0}
+.neuro .top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.neuro .chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff}
+.neuro .chip.on{background:#fff;color:var(--ink)}
+.neuro svg{width:100%;height:auto}
+.neuro .cap{min-height:56px;font-size:16px;color:rgba(255,255,255,.85);margin-top:8px}
+.nn line,.nn path{transition:all .6s}
+.nn circle{transition:all .6s}
+.nn .pn circle{fill:#3A3A58}.nn .rn circle{fill:#3A3A58}
+.nn .pe line,.nn .re line{stroke:#3A3A58;stroke-width:2}
+.nn .bridge{stroke:var(--c4);stroke-width:3;opacity:0;stroke-dasharray:6 6}
+.nn .old{stroke:#5a5a78;stroke-width:4;fill:none}
+.nn .new{stroke:var(--c3);stroke-width:4;fill:none;opacity:0;stroke-dasharray:400;stroke-dashoffset:400}
+.nn .trig circle{fill:#fff}
+.nn text{fill:rgba(255,255,255,.7);font-size:14px;font-family:Inter,sans-serif;font-weight:600}
+.nn[data-s="1"] .pn circle{fill:var(--c1);filter:url(#glow)}
+.nn[data-s="1"] .pe line{stroke:var(--c1)}
+.nn[data-s="1"] .old{stroke:var(--c1)}
+.nn[data-s="2"] .pn circle,.nn[data-s="2"] .rn circle{fill:#2c2c46}
+.nn[data-s="2"] .trig circle{fill:#55557a}
+.nn[data-s="3"] .rn circle{fill:var(--c3);filter:url(#glow)}
+.nn[data-s="3"] .re line{stroke:var(--c3)}
+.nn[data-s="4"] .pn circle{fill:var(--c1)}
+.nn[data-s="4"] .rn circle{fill:var(--c3);filter:url(#glow)}
+.nn[data-s="4"] .pe line{stroke:rgba(255,61,104,.6)}
+.nn[data-s="4"] .re line{stroke:var(--c3)}
+.nn[data-s="4"] .bridge{opacity:1;animation:flow 1s linear infinite}
+.nn[data-s="5"] .pn circle{fill:#35354f}
+.nn[data-s="5"] .pe line{stroke:#2a2a40;stroke-dasharray:3 6}
+.nn[data-s="5"] .rn circle{fill:var(--c3);filter:url(#glow)}
+.nn[data-s="5"] .re line{stroke:var(--c3)}
+.nn[data-s="5"] .old{stroke:#33334c;stroke-dasharray:2 10}
+.nn[data-s="5"] .new,.nn[data-s="4"] .new{opacity:1;stroke-dashoffset:0}
+.nn[data-s="5"] .bridge{opacity:.25}
+@keyframes flow{to{stroke-dashoffset:-24}}
+
+/* timeline */
+.timeline{position:relative;display:grid;gap:4px;margin:24px 0;padding-left:28px}
+.timeline::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:3px;border-radius:3px;background:linear-gradient(var(--c1),var(--c2),var(--c3),var(--c4))}
+.tl{position:relative;padding:12px 0 12px 16px}
+.tl::before{content:"";position:absolute;left:-26px;top:20px;width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--ink)}
+.tl small{font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.tl p{margin-top:2px}
+
+/* tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tab{height:42px;padding:0 16px;border-radius:12px;background:var(--plate);font-weight:600;font-size:15px;transition:all .2s}
+.tab:hover{background:#E9EAF2}
+.tab.on{background:var(--ink);color:#fff}
+.pane{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.strip>div{border-radius:16px;padding:18px;position:relative}
+.strip>div .tag{margin-bottom:10px}
+.strip>div p{font-size:15px;line-height:1.55}
+.strip .s1{background:var(--c1s)}.strip .s2{background:var(--c2s)}.strip .s3{background:var(--c3s)}.strip .s4{background:var(--c4s)}
+.strip>div:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:2}
+.insight{display:flex;gap:12px;padding:18px 20px;border-radius:16px;background:var(--plate);margin-top:12px}
+.insight b{white-space:nowrap}
+
+/* bars */
+.bars{display:grid;gap:14px;margin:20px 0}
+.barrow{display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:center}
+.barrow small{font-weight:700;color:var(--muted);font-size:14px}
+.bartrack{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--plate)}
+.bartrack i{display:flex;align-items:center;padding:0 10px;font-style:normal;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;transition:width 1s ease}
+
+/* troubleshoot */
+.ts{display:grid;grid-template-columns:1fr 1.1fr;gap:20px}
+.ts-list{display:grid;gap:8px}
+.ts-list button{text-align:left;padding:14px 16px;border-radius:14px;background:var(--plate);font-weight:600;font-size:15px;line-height:1.45;transition:all .2s;border:2px solid transparent}
+.ts-list button:hover{background:#ECEDF4}
+.ts-list button.on{background:#fff;border-color:var(--ink)}
+.ts-out{border-radius:var(--radius);padding:28px;border:1px solid var(--line);background:#fff;position:sticky;top:96px;align-self:start;min-height:260px}
+
+/* cheat */
+.cheat{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.cheat .col{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:#fff}
+.cheat .col .hd{padding:18px 20px;color:#fff}
+.cheat .col .hd b{font-size:32px;font-weight:900;display:block;line-height:1}
+.cheat .col .hd span{font-weight:700;font-size:15px}
+.cheat .col .bd{padding:16px 20px 20px;font-size:14.5px;line-height:1.55}
+.cheat .col .bd small{display:block;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.cheat .col .bd small:first-child{margin-top:0}
+
+/* quiz */
+.quiz{display:grid;gap:16px}
+.q{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:#fff}
+.q .qt{font-weight:700;font-size:18px;margin-bottom:14px}
+.q .opts{display:grid;gap:8px}
+.q .opt{text-align:left;padding:12px 16px;border-radius:12px;background:var(--plate);font-size:15.5px;font-weight:500;border:2px solid transparent;transition:all .2s}
+.q .opt:hover:not([disabled]){background:#ECEDF4}
+.q .opt.ok{background:var(--c3s);border-color:var(--c3)}
+.q .opt.bad{background:var(--c1s);border-color:var(--c1)}
+.q .opt[disabled]{cursor:default}
+.q .fb{margin-top:12px;font-size:15px;display:none;padding:12px 16px;border-radius:12px;background:var(--plate)}
+.q.done .fb{display:block}
+.score{display:flex;align-items:center;gap:16px;padding:20px 24px;border-radius:var(--radius);background:var(--ink);color:#fff;font-weight:700;position:sticky;bottom:16px;z-index:5}
+.score .bar{flex:1;height:8px;border-radius:8px;background:rgba(255,255,255,.15);overflow:hidden}
+.score .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c4));transition:width .5s}
+
+/* self-coaching checklist */
+.check{display:grid;gap:12px}
+.check label{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:20px;border-radius:16px;background:#fff;border:1px solid var(--line);cursor:pointer;transition:all .2s}
+.check input{appearance:none;width:26px;height:26px;border-radius:8px;border:2px solid #C9CBD8;display:grid;place-content:center;cursor:pointer;transition:all .2s;margin-top:2px}
+.check input:checked{background:var(--k,var(--ink));border-color:var(--k,var(--ink))}
+.check input:checked::after{content:"✓";color:#fff;font-weight:900;font-size:15px}
+.check label:has(input:checked){background:var(--plate)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+footer{padding:64px 0;background:var(--plate);margin-top:96px}
+footer p{max-width:760px;color:var(--muted);font-size:15px}
+
+/* ---------- adaptive ---------- */
+@media (max-width:1100px){
+  .layout{grid-template-columns:1fr}
+  .sidenav{position:fixed;top:64px;left:0;bottom:0;width:300px;max-height:none;background:#fff;z-index:40;padding:16px;border-right:1px solid var(--line);transform:translateX(-102%);transition:transform .3s;box-shadow:0 0 40px rgba(0,0,0,.1)}
+  .sidenav.open{transform:none}
+  .menu-btn{display:flex}
+  .cycle-wrap{grid-template-columns:1fr}
+  .cycle svg{max-width:420px;margin:0 auto}
+}
+@media (max-width:900px){
+  .hero .grid{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr 1fr}
+  .cheat{grid-template-columns:1fr 1fr}
+  .strip{grid-template-columns:1fr 1fr}
+  .strip>div:nth-child(2)::after{display:none}
+  .ts{grid-template-columns:1fr}
+  .ts-out{position:static}
+  .legend{display:none}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .container{padding:0 16px}
+  .hero{padding:104px 0 56px}
+  .hero h1{font-size:38px}
+  .hero .lead{font-size:17px}
+  h2{font-size:30px}
+  h3{font-size:21px;margin-top:36px}
+  section.sec{padding:64px 0 16px}
+  .grid2,.grid3,.compare,.cheat,.strip{grid-template-columns:1fr}
+  .compare .d{border-left:none;border-top:1px solid var(--line)}
+  .strip>div::after{display:none}
+  .letters{grid-template-columns:repeat(2,1fr)}
+  .step-banner{grid-template-columns:1fr;padding:24px}
+  .step-banner .L{width:88px;height:88px;font-size:64px}
+  .big-quote{font-size:22px}
+  .msg{max-width:94%}
+  .card{padding:22px}
+}
+@media print{
+  .topbar,.sidenav,.hero,footer,section.sec:not(#cheat){display:none!important}
+  .layout{display:block}
+  #cheat{padding:0;border:none}
+  .card,.cheat .col{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="in">
+    <button class="menu-btn" id="menuBtn" aria-label="Открыть оглавление">☰</button>
+    <a href="#top" class="logo"><span class="dots"><i class="bg1"></i><i class="bg2"></i><i class="bg3"></i><i class="bg4"></i></span>АДАК</a>
+    <div class="legend">
+      <span class="t1">А · проблема</span><span class="t2">Д · выход</span><span class="t3">А · ресурс</span><span class="t4">К · коллапс</span>
+    </div>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+
+<div class="hero" id="top">
+  <div class="container">
+    <div class="grid">
+      <div>
+        <span class="eyebrow">Мета-паттерн HNLP · полный разбор</span>
+        <h1>АДАК: четыре шага, <span class="g">на которых держится любая техника НЛП</span></h1>
+        <p class="lead">Ассоциация, Диссоциация, Ассоциация, Коллапс. Схема Джона Овердерфа, с которой два десятка разрозненных техник складываются в одну понятную карту. Здесь разобран каждый шаг: зачем он нужен, что в это время происходит в мозге, как его делать и как понять, что он сработал.</p>
+        <div class="btns">
+          <a href="#what" class="btn dark">Начать с основ ↓</a>
+          <a href="#cheat" class="btn light">Сразу к шпаргалке</a>
+        </div>
+        <div class="letters">
+          <a href="#s1" class="letter bg1" style="text-decoration:none"><b>А</b><span>Ассоциация в проблему</span></a>
+          <a href="#s2" class="letter bg2" style="text-decoration:none"><b>Д</b><span>Диссоциация от проблемы</span></a>
+          <a href="#s3" class="letter bg3" style="text-decoration:none"><b>А</b><span>Ассоциация в ресурс</span></a>
+          <a href="#s4" class="letter bg4" style="text-decoration:none"><b>К</b><span>Коллапс: ресурс + проблема</span></a>
+        </div>
+      </div>
+      <div class="cycle" aria-hidden="true">
+        <svg viewBox="0 0 400 400" width="100%">
+          <path d="M207.8 50.2 A150 150 0 0 1 349.8 192.2" stroke="#FF3D68" stroke-width="44" fill="none" stroke-linecap="round"/>
+          <path d="M349.8 207.8 A150 150 0 0 1 207.8 349.8" stroke="#5B5BF7" stroke-width="44" fill="none" stroke-linecap="round"/>
+          <path d="M192.2 349.8 A150 150 0 0 1 50.2 207.8" stroke="#0FB57D" stroke-width="44" fill="none" stroke-linecap="round"/>
+          <path d="M50.2 192.2 A150 150 0 0 1 192.2 50.2" stroke="#FF9F1C" stroke-width="44" fill="none" stroke-linecap="round"/>
+          <g font-family="Inter" font-weight="900" font-size="26" fill="#fff" text-anchor="middle">
+            <text x="306" y="103">А</text><text x="306" y="315">Д</text><text x="94" y="315">А</text><text x="94" y="103">К</text>
+          </g>
+          <text x="200" y="192" text-anchor="middle" font-family="Inter" font-weight="900" font-size="44" fill="#15152B">4 шага</text>
+          <text x="200" y="224" text-anchor="middle" font-family="Inter" font-weight="600" font-size="16" fill="#5D6079">и петля по кругу</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container layout">
+<nav class="sidenav" id="sidenav" aria-label="Оглавление">
+  <p>Основа</p>
+  <a href="#what"><b>01</b>Что такое АДАК</a>
+  <a href="#cycle"><b>02</b>Четыре шага</a>
+  <a href="#brain"><b>03</b>Что происходит в мозге</a>
+  <a href="#ad"><b>04</b>Ассоциация и диссоциация</a>
+  <p>Шаги подробно</p>
+  <a href="#s1"><b>А</b>Ассоциация в проблему</a>
+  <a href="#trigger"><b>05</b>Поиск триггера</a>
+  <a href="#s2"><b>Д</b>Диссоциация</a>
+  <a href="#s3"><b>А</b>Ассоциация в ресурс</a>
+  <a href="#s4"><b>К</b>Коллапс</a>
+  <a href="#loops"><b>06</b>Петли и повторы</a>
+  <p>Применение</p>
+  <a href="#coaching"><b>07</b>Коучинговый паттерн</a>
+  <a href="#classic"><b>08</b>Техники НЛП через АДАК</a>
+  <a href="#self"><b>09</b>Самокоучинг</a>
+  <a href="#life"><b>10</b>АДАК вокруг нас</a>
+  <p>Закрепление</p>
+  <a href="#fix"><b>11</b>Если не сработало</a>
+  <a href="#cheat"><b>12</b>Шпаргалка</a>
+  <a href="#quiz"><b>13</b>Проверь себя</a>
+</nav>
+
+<main class="content">
+
+<!-- 01 -->
+<section class="sec" id="what">
+  <div class="sec-head rv">
+    <span class="num">01 · ОСНОВА</span>
+    <h2>Что такое мета-паттерн</h2>
+    <p>Последовательность из четырёх шагов, по которой человек переходит из одного состояния в другое. По ней построены все классические техники НЛП, коучинг, гипноз, хорошая реклама и сильные речи.</p>
+  </div>
+
+  <div class="rv">
+    <p>Модель сформулировал <b>Джон Овердерф</b>, тренер HNLP (гуманистической нейролингвистической психологии), в начале девяностых. Сам он называл её «Матерью всех паттернов НЛП». Шон и Сара Карсон, его ученики, написали о ней отдельную книгу. Этот сайт построен по ней.</p>
+    <p>В русскоязычной среде схему запоминают по первым буквам шагов: <b>А‑Д‑А‑К</b>.</p>
+  </div>
+
+  <div class="grid3 rv" style="margin-top:32px">
+    <div class="card"><div class="ico t1">🧩</div><h4>Каркас для техник</h4><p class="small muted">Взмах, круг совершенства, визуальная сборка, рефрейминг устроены по одной схеме. Когда она понятна, порядок шагов в технике перестаёт быть списком для зубрёжки: у каждого шага появляется смысл.</p></div>
+    <div class="card"><div class="ico t2">🧭</div><h4>Карта сессии</h4><p class="small muted">В любой момент видно, где сейчас клиент и куда его вести дальше. Если что-то пошло не так, легко найти шаг, на котором это случилось.</p></div>
+    <div class="card"><div class="ico t3">📣</div><h4>Структура влияния</h4><p class="small muted">Реклама, сказки, фильмы, продажи, речи политиков проводят слушателя через те же четыре состояния. Зная схему, ты замечаешь её повсюду.</p></div>
+  </div>
+
+  <h3 class="rv">Три стадии освоения</h3>
+  <p class="rv">Авторы книги честно предупреждают, как обычно идёт знакомство со схемой:</p>
+  <ol class="steps rv">
+    <li style="--dot:var(--c1)"><b>Кажется слишком простой.</b> Четыре шага, которые трудно воспринимать всерьёз. Не верится, что ими объясняется всё.</li>
+    <li style="--dot:var(--c2)"><b>Техники не влезают.</b> Пытаешься разложить по шагам знакомые техники, и некоторые сопротивляются. Например, во взмахе образ желаемого «я» остаётся диссоциированным.</li>
+    <li style="--dot:var(--c3)"><b>Приходит глубина.</b> Начинаешь понимать, какую задачу решает каждый шаг техники, и видишь, где у неё спрятан ресурс и где коллапс. Это и есть мастерство.</li>
+  </ol>
+
+  <div class="plate rv" style="margin-top:32px">
+    <h4>История Сары</h4>
+    <p class="small">После курса практика у неё было около двадцати техник и растущее чувство перегруза: какую брать, что делать, если не сработала. Стандартный ответ «сделай что-нибудь другое» не помогал. На первом дне мастер-курса Овердерф показал мета-паттерн, и вечером в отеле она разложила по нему все выученные техники. Все легли в схему.</p>
+  </div>
+
+  <h3 class="rv">Откуда это взялось</h3>
+  <p class="rv">В основе схемы лежит идея о двух состояниях, которые борются за управление человеком. Она очень старая.</p>
+  <div class="timeline rv">
+    <div class="tl"><small>Древность</small><p>«Бхагавад-гита», «Одиссея», Нагорная проповедь. Везде есть два мира: боль Арджуны и истина Кришны, Троянская война и мирная Итака, «око за око» и «подставь другую щёку».</p></div>
+    <div class="tl"><small>XVIII–XIX век</small><p>Маркиз де Пюисегюр, ученик Месмера, замечает, что под гипнозом у пациентов проявляются совсем другие личности.</p></div>
+    <div class="tl"><small>Фрейд и Юнг</small><p>Лечат, заново соединяя разные части личности. По сути, дают человеку пережить оба состояния одновременно.</p></div>
+    <div class="tl"><small>Бейтсон и Перлз</small><p>Теория двойного послания. Гештальт-терапия с двумя стульями: клиент пересаживается с одного на другой и постепенно соединяет две свои части.</p></div>
+    <div class="tl"><small>Бэндлер и Гриндер</small><p>«Структура магии» описывает работу Перлза и Сатир через поиск неконгруэнтности. Позже появляются отдельные техники со звучными названиями, и обучение НЛП превращается в заучивание шагов.</p></div>
+    <div class="tl"><small>1990-е, Джон Овердерф</small><p>Преподавая на мастер-курсах Тэда Джеймса на Гавайях, выделяет общую схему всех техник. Позже вместе с Джули Силверторн включает её в модель Beyond Words. Работа по телефону заставляет его создать разговорные версии техник, и так появляется Коучинговый паттерн.</p></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="sec" id="cycle">
+  <div class="sec-head rv">
+    <span class="num">02 · ОСНОВА</span>
+    <h2>Четыре шага на одной схеме</h2>
+    <p>Нажми на сегмент круга или на кнопку снизу, чтобы открыть шаг.</p>
+  </div>
+  <div class="cycle-wrap rv">
+    <div class="cycle">
+      <svg viewBox="0 0 400 400" id="cycleSvg" role="img" aria-label="Круговая схема четырёх шагов">
+        <path class="seg" data-i="0" d="M207.8 50.2 A150 150 0 0 1 349.8 192.2" stroke="#FF3D68" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <path class="seg" data-i="1" d="M349.8 207.8 A150 150 0 0 1 207.8 349.8" stroke="#5B5BF7" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <path class="seg" data-i="2" d="M192.2 349.8 A150 150 0 0 1 50.2 207.8" stroke="#0FB57D" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <path class="seg" data-i="3" d="M50.2 192.2 A150 150 0 0 1 192.2 50.2" stroke="#FF9F1C" stroke-width="44" fill="none" stroke-linecap="round"/>
+        <g font-family="Inter" font-weight="900" font-size="26" fill="#fff" text-anchor="middle">
+          <text x="306" y="103">1</text><text x="306" y="315">2</text><text x="94" y="315">3</text><text x="94" y="103">4</text>
+        </g>
+        <text id="cycCenter" x="200" y="196" text-anchor="middle" font-family="Inter" font-weight="900" font-size="40" fill="#15152B">АДАК</text>
+        <text id="cycSub" x="200" y="226" text-anchor="middle" font-family="Inter" font-weight="600" font-size="15" fill="#5D6079">выбери шаг</text>
+      </svg>
+    </div>
+    <div class="cycle-panel" id="cyclePanel"></div>
+  </div>
+
+  <div class="big-quote rv">Два состояния борются за человека. Задача: зажечь оба, а потом зажечь их одновременно, чтобы ресурс победил.<small>Суть мета-паттерна в одной фразе</small></div>
+
+  <div class="grid2 rv">
+    <div class="plate tint1"><h4>Проблемное (текущее) состояние</h4><p class="small">То, что человек хочет изменить. Страх перед полётом, ступор на презентации, тяга к сигарете. Всегда привязано к контексту: месту, людям, моменту, триггеру.</p></div>
+    <div class="plate tint3"><h4>Ресурсное состояние</h4><p class="small">То, как человек хочет себя чувствовать и вести в этом контексте. Спокойствие, уверенность, любопытство. Сформулировано в позитиве и находится в его власти.</p></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="sec" id="brain">
+  <div class="sec-head rv">
+    <span class="num">03 · ОСНОВА</span>
+    <h2>Что происходит в мозге</h2>
+    <p>Если структура мозга после техники осталась прежней, человек тоже остался прежним. Вот шесть принципов, на которые опирается каждый шаг.</p>
+  </div>
+
+  <div class="neuro rv">
+    <div class="top">
+      <b style="font-size:18px">Посмотри на мета-паттерн глазами нейронов</b>
+      <div class="cycle-nav" style="margin-top:0" id="nnBtns">
+        <button class="chip" data-s="1">1 · Зажечь</button>
+        <button class="chip" data-s="2">2 · Пауза</button>
+        <button class="chip" data-s="3">3 · Ресурс</button>
+        <button class="chip" data-s="4">4 · Коллапс</button>
+        <button class="chip" data-s="5">Через время</button>
+        <button class="chip" id="nnPlay">▶ Всё по порядку</button>
+      </div>
+    </div>
+    <svg viewBox="0 0 600 300" class="nn" id="nn" data-s="0">
+      <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <path class="old" d="M300 52 C 240 80, 190 110, 155 140"/>
+      <path class="new" d="M300 52 C 360 80, 410 110, 445 140"/>
+      <g class="pe">
+        <line x1="110" y1="170" x2="150" y2="140"/><line x1="150" y1="140" x2="190" y2="175"/><line x1="110" y1="170" x2="150" y2="190"/><line x1="190" y1="175" x2="150" y2="190"/><line x1="150" y1="190" x2="130" y2="225"/><line x1="150" y1="190" x2="180" y2="232"/><line x1="130" y1="225" x2="180" y2="232"/><line x1="110" y1="170" x2="130" y2="225"/>
+      </g>
+      <g class="re">
+        <line x1="410" y1="170" x2="450" y2="140"/><line x1="450" y1="140" x2="490" y2="175"/><line x1="410" y1="170" x2="450" y2="190"/><line x1="490" y1="175" x2="450" y2="190"/><line x1="450" y1="190" x2="430" y2="225"/><line x1="450" y1="190" x2="480" y2="232"/><line x1="430" y1="225" x2="480" y2="232"/><line x1="490" y1="175" x2="480" y2="232"/>
+      </g>
+      <line class="bridge" x1="190" y1="175" x2="410" y2="170"/>
+      <line class="bridge" x1="180" y1="232" x2="430" y2="225"/>
+      <line class="bridge" x1="150" y1="190" x2="450" y2="190"/>
+      <g class="pn"><circle cx="110" cy="170" r="9"/><circle cx="150" cy="140" r="9"/><circle cx="190" cy="175" r="9"/><circle cx="150" cy="190" r="10"/><circle cx="130" cy="225" r="9"/><circle cx="180" cy="232" r="9"/></g>
+      <g class="rn"><circle cx="410" cy="170" r="9"/><circle cx="450" cy="140" r="9"/><circle cx="490" cy="175" r="9"/><circle cx="450" cy="190" r="10"/><circle cx="430" cy="225" r="9"/><circle cx="480" cy="232" r="9"/></g>
+      <g class="trig"><circle cx="300" cy="44" r="13"/></g>
+      <text x="300" y="20" text-anchor="middle">Триггер: голос начальника, вид самолёта</text>
+      <text x="150" y="275" text-anchor="middle">Сеть проблемы</text>
+      <text x="450" y="275" text-anchor="middle">Сеть ресурса</text>
+    </svg>
+    <p class="cap" id="nnCap">Сверху триггер, тот самый момент, который запускает реакцию. Слева нейросеть проблемы, справа сеть ресурса. Нажми «Всё по порядку».</p>
+  </div>
+
+  <div class="grid2 rv">
+    <div class="card"><div class="ico t2">🎭</div><h4>Обучение, зависимое от состояния</h4><p class="small">Нам доступны те воспоминания и навыки, которые связаны с текущим состоянием. Студенты лучше сдают экзамен в той же аудитории, где учились, и даже одинаковый запах помогает вспомнить. В плохом состоянии всё видится плохим, как через тёмные очки.</p><p class="small"><span class="tag t2">→ шаг Д</span> Поэтому человек в проблеме на вопрос «как хочешь себя чувствовать?» отвечает «не хочу бояться».</p></div>
+    <div class="card"><div class="ico t4">🔗</div><h4>Закон Хебба</h4><p class="small"><b>Нейроны, которые срабатывают вместе, связываются вместе.</b> Малыш Джонни запинается на выступлении в садике, над ним смеются, и сети «выступление» и «тревога» загораются вместе. Пара повторов, и они сливаются в одну. У Джейни после удачного выступления так же срослись «выступление» и «уверенность».</p><p class="small"><span class="tag t4">→ шаг К</span> На этом законе держится коллапс.</p></div>
+    <div class="card"><div class="ico t3">⚡</div><h4>Долговременная потенциация</h4><p class="small">Две сети, которые горят одновременно, становятся чувствительнее друг к другу. Это предшественник прочной хеббовской связи. Сначала сети просто «замечают» друг друга, а повторы делают связь постоянной.</p><p class="small"><span class="tag t4">→ шаг К + петли</span> Коллапс нужно повторить несколько раз, сбивая состояние между повторами.</p></div>
+    <div class="card"><div class="ico t2">⏱️</div><h4>Правило 90 секунд</h4><p class="small">Эмоция это химическая волна в мозге и теле, и живёт она примерно полторы минуты. Дольше она держится, только если её подпитывать: снаружи (смотришь матч) или изнутри (думаешь о нём).</p><p class="small"><span class="tag t2">→ шаг Д</span> Отвлеки человека, чтобы он перестал подпитывать проблему, и состояние сменится само.</p></div>
+    <div class="card"><div class="ico t1">🌿</div><h4>Нейронный дарвинизм</h4><p class="small">Принцип Джеральда Эдельмана: сети, которые больше не срабатывают, обрезаются. Связи между нейронами буквально рвутся. Как лесная тропа: по новой ходят, старая зарастает.</p><p class="small"><span class="tag t4">→ после шага К</span> Старый путь от триггера к проблеме слабеет сам, без борьбы.</p></div>
+    <div class="card"><div class="ico t3">👁️</div><h4>Квантовый эффект Зенона</h4><p class="small">«Чайник, за которым следят, не закипает». Чем дольше наблюдаешь частицу, тем меньше она меняется. В работе с клиентом: чем дольше он смотрит на проблему, тем крепче она стоит.</p><p class="small"><span class="tag t2">→ все шаги</span> Внимание постоянно переводят с места на место, и это «расшатывает бетон», в который залита проблема.</p></div>
+  </div>
+
+  <div class="plate tint1 rv" style="margin-top:20px">
+    <h4>Почему проблему вообще нужно «зажигать»</h4>
+    <p class="small">Из предисловия Овердерфа. <b>Нейропластичность:</b> меняется только та цепь, которая сейчас активна. Не зажёг, значит ресурсу не к чему прикрепиться. <b>Реконсолидация памяти:</b> когда живое, чувственное воспоминание всплывает в сознание, оно снова становится пластичным, как в момент записи. То, что произойдёт в это окно, перезапишет оригинал. Примерно за шесть часов новая версия снова «запирается».</p>
+  </div>
+
+  <div class="note rv"><span class="em">🌲</span><div><h4>Метафора, которую можно рассказать клиенту</h4><p class="small muted">«Мы прокладываем новую тропу в лесу. В первый раз приходится продираться через кусты. Во второй уже легче, к третьему-четвёртому тропа хорошо видна. Скоро это дорога, потом шоссе к хорошему самочувствию. А тропа, по которой больше никто не ходит, быстро зарастает».</p></div></div>
+</section>
+
+<!-- 04 -->
+<section class="sec" id="ad">
+  <div class="sec-head rv">
+    <span class="num">04 · ОСНОВА</span>
+    <h2>Ассоциация и диссоциация</h2>
+    <p>Два базовых движения, из которых собраны три шага из четырёх. Умение ввести человека в переживание, вывести из него и удержать в нужном месте и есть главный навык.</p>
+  </div>
+
+  <div class="compare rv">
+    <div class="a">
+      <div class="h" style="color:var(--c1d)">Ассоциация<br><span style="font-size:15px;font-weight:600;color:var(--muted)">полностью внутри переживания</span></div>
+      <div class="row"><small>Картинка</small>Смотрит своими глазами, себя в кадре не видит</div>
+      <div class="row"><small>Чувства</small>Видит, слышит и чувствует то, что тогда. Эмоция есть в теле прямо сейчас</div>
+      <div class="row"><small>Речь</small>Настоящее время, «я»: «Я стою у доски, у меня колотится сердце»</div>
+      <div class="row"><small>Как будто</small>Переживает заново</div>
+    </div>
+    <div class="d">
+      <div class="h" style="color:var(--c2d)">Диссоциация<br><span style="font-size:15px;font-weight:600;color:var(--muted)">на расстоянии от переживания</span></div>
+      <div class="row"><small>Картинка</small>Видит себя со стороны, как муха на стене</div>
+      <div class="row"><small>Чувства</small>Эмоции почти нет. Можно спокойно говорить о том, как когда-то сильно злился</div>
+      <div class="row"><small>Речь</small>Прошедшее время, третье лицо: «Он стоит, немного сутулится»</div>
+      <div class="row"><small>Как будто</small>Наблюдает. Как мистер Спок из «Звёздного пути»</div>
+    </div>
+  </div>
+
+  <h3 class="rv">Как ассоциировать</h3>
+  <div class="grid2 rv">
+    <div class="card">
+      <span class="tag t1">Способ 1</span>
+      <h4 style="margin-top:12px">Оживление воспоминания (ревивификация)</h4>
+      <p class="small">Спроси: «Когда это было в последний раз? Где ты? Что происходит?» Переходи в настоящее время и мягко держи там человека. Если он рассказывает в прошедшем, он рассказывает <i>о</i> событии и ещё в нём не находится.</p>
+      <div class="dialog">
+        <div class="msg client"><div class="who">Фил</div>Это была классная вечеринка. Мы все сидели у бассейна.</div>
+        <div class="msg coach"><div class="who">Коуч</div>Здорово, вы все <em>сидите</em> у бассейна… Что ты <em>видишь</em>?</div>
+        <div class="msg client"><div class="who">Фил</div>Джим у гриля, Дженна несёт ему кукурузу.</div>
+        <div class="msg coach"><div class="who">Коуч</div>А что ты <em>чувствуешь</em> прямо сейчас?</div>
+        <div class="msg client"><div class="who">Фил</div>Мне потрясающе, я так рад быть с семьёй.</div>
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag t3">Способ 2</span>
+      <h4 style="margin-top:12px">Подстройка и ведение маленькими шагами</h4>
+      <p class="small">Повторяй слова клиента (это подстройка, её ещё называют бэктрекингом) и добавляй один вопрос, который чуть уточняет ощущение. Шаги маленькие, поэтому идти легко, а состояние растёт.</p>
+      <div class="dialog">
+        <div class="msg coach"><div class="who">Коуч</div>И пока ты чувствуешь уверенность, где ты её чувствуешь?</div>
+        <div class="msg client"><div class="who">Клиент</div>Наверное, в груди.</div>
+        <div class="msg coach"><div class="who">Коуч</div>Да, в груди. Где именно в груди?</div>
+        <div class="msg client"><div class="who">Клиент</div>Вот тут, посередине. Как золотой шар размером с бейсбольный мяч.</div>
+        <div class="msg coach"><div class="who">Коуч</div>Золотой шар… И он двигается? Я вижу, твоя рука крутится…</div>
+        <div class="msg client"><div class="who">Клиент</div>Да, вращается.</div>
+        <div class="msg coach"><div class="who">Коуч</div>А что будет, если раскрутить его чуть быстрее?</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="rv">Как диссоциировать</h3>
+  <div class="grid3 rv">
+    <div class="card"><div class="ico t2">🍿</div><h4>Сбить состояние</h4><p class="small muted">Вопрос не по теме: «Чувствуешь запах попкорна?» Внимание уходит в другой канал восприятия, и картинка проблемы гаснет.</p></div>
+    <div class="card"><div class="ico t2">🔢</div><h4>Нагрузить логику</h4><p class="small muted">«Назови свой номер телефона задом наперёд». Сложный когнитивный вопрос заставляет думать, а думать и переживать одновременно трудно.</p></div>
+    <div class="card"><div class="ico t2">🧍</div><h4>Сменить позу и место</h4><p class="small muted">«Встань сюда и подними правую руку до плеча». Тело меняется, вместе с ним меняется состояние.</p></div>
+  </div>
+  <div class="dialog-card rv" style="margin-top:20px">
+    <h4><span class="tag t2">Взгляд со стороны</span> Отис и начальница</h4>
+    <div class="dialog">
+      <div class="msg client"><div class="who">Отис</div>Каждый раз, когда вижу её лицо, мне страшно, что меня уволят. Становится жарко, всё сжимается внутри.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Отойди вот сюда и посмотри на того Отиса, вон там. Что ты видишь?</div>
+      <div class="msg client"><div class="who">Отис</div>Ну… я стою…</div>
+      <div class="msg coach"><div class="who">Коуч</div>Он стоит…</div>
+      <div class="msg client"><div class="who">Отис</div>А, да. Он стоит у стола, немного сгорбился. Дышит поверхностно.</div>
+    </div>
+    <p class="small muted">Коуч следит, чтобы Отис говорил о себе в третьем лице. Так дистанция сохраняется.</p>
+  </div>
+</section>
+<!-- STEP 1 -->
+<section class="sec" id="s1">
+  <div class="step-banner sb1 rv">
+    <div class="L">А</div>
+    <div><span class="eyebrow" style="color:rgba(255,255,255,.85)">Шаг 1 из 4</span><h2>Ассоциация в проблему</h2><p>Человек возвращается в один конкретный момент, когда проблема случилась, и проживает его так, будто это происходит сейчас.</p></div>
+  </div>
+
+  <h3 class="rv" style="margin-top:0">Зачем этот шаг</h3>
+  <div class="grid2 rv">
+    <div class="plate"><h4>🔥 Зажечь нужную сеть</h4><p class="small">Проблема живёт в определённой нейросети. Пока она не активна, менять нечего, и ресурсу некуда прикрепиться на шаге 4.</p></div>
+    <div class="plate"><h4>📏 Снять «базовую линию»</h4><p class="small">Ты видишь, как выглядит человек в проблеме: дыхание, цвет кожи, поза, голос. Позже будешь сравнивать с этим и замечать изменения. Это называется калибровкой.</p></div>
+    <div class="plate"><h4>🔍 Понять, как он «делает» проблему</h4><p class="small">Клаудия боялась летать. Выяснилось, что, подходя к самолёту, она каждый раз вспоминала кадры новостей о крушении. Картинку в голове можно менять.</p></div>
+    <div class="plate"><h4>🧠 Открыть память для перезаписи</h4><p class="small">Живое воспоминание снова становится пластичным (реконсолидация). То, что случится дальше, запишется в него.</p></div>
+  </div>
+
+  <h3 class="rv">Как это делать</h3>
+  <ol class="steps rv" style="--dot:var(--c1)">
+    <li><b>Один конкретный случай.</b> «Когда это было в последний раз? Где ты? Который час?» Фраза «так бывает каждый раз на работе» не годится: нужен один эпизод.</li>
+    <li><b>Настоящее время.</b> Задавай вопросы в настоящем: «Что ты видишь? Что слышишь? Что чувствуешь?» Повторяй ответы клиента, переводя их в настоящее: «Я увидел начальника» → «Ты видишь начальника».</li>
+    <li><b>Детали.</b> Направляй внимание на сенсорные мелочи: откуда падает свет, чей голос слышен, какая температура в комнате.</li>
+    <li><b>Ровно столько, сколько нужно.</b> В книге есть фраза: «Чтобы исцелить, нужно почувствовать». Но погружать человека в страдание незачем. Как только появились признаки, шаг сделан.</li>
+  </ol>
+
+  <div class="dialog-card rv">
+    <h4><span class="tag t1">Пример из книги</span> Нейт и понедельничная планёрка</h4>
+    <div class="dialog">
+      <div class="msg coach"><div class="who">Коуч</div>Когда в последний раз тебе было тревожно перед выступлением?</div>
+      <div class="msg client"><div class="who">Нейт</div>В прошлый понедельник утром.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Хорошо. И где ты?</div>
+      <div class="msg client"><div class="who">Нейт</div>На утренней планёрке. Ну, жду, когда меня вызовут.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Ты ждёшь, когда тебя вызовут, и сидишь…</div>
+      <div class="msg client"><div class="who">Нейт</div>Сижу в переговорной. Шесть человек за столом, начальник во главе.<span class="act">голос становится выше, дыхание учащается</span></div>
+      <div class="msg coach"><div class="who">Коуч</div>И что ты чувствуешь, пока сидишь там?</div>
+      <div class="msg client"><div class="who">Нейт</div>Нервничаю. Хочу, чтобы это закончилось.</div>
+    </div>
+  </div>
+
+  <h3 class="rv">По каким признакам видно, что шаг сделан</h3>
+  <div class="signs rv"><span>меняется цвет кожи</span><span>вздох или задержка дыхания</span><span>другой тон и темп речи</span><span>речь в настоящем времени</span><span>сдвиг позы</span><span>меняется выражение лица</span><span>ёрзает, теребит руки</span></div>
+  <p class="rv small muted">Иногда клиент рассказывает о проблеме, а никаких признаков нет. Спроси: «Как ты в теле понимаешь, что тебе тревожно?» Поиск ощущения быстро его вызывает.</p>
+
+  <h3 class="rv">Если не получается</h3>
+  <div class="grid2 rv">
+    <div class="card"><h4>🎬 Фильм в натуральную величину</h4><p class="small muted">Попроси представить происходящее как фильм на большом экране, увидеть себя в нём, а потом шагнуть внутрь фильма, в тело того себя на экране.</p></div>
+    <div class="card"><h4>🤔 Не хочет переживать снова</h4><p class="small muted">Иногда настоящая проблема в нежелании что-либо чувствовать. Тогда сначала работают с ней. Пример из книги: клиентка годами избегала думать о расставании и приходила в слёзы, как только оказывалась в той ситуации мысленно.</p></div>
+  </div>
+  <div class="plate tint1 rv" style="margin-top:20px">
+    <h4>⚠️ Фобии и травмы</h4>
+    <p class="small">Здесь глубокое погружение не нужно и даже вредно: остаток сессии уйдёт на то, чтобы успокоить человека. Обычно он начинает ассоциироваться, как только называет, чего боится. Этого достаточно, чтобы зажечь нужную сеть.</p>
+  </div>
+  <div class="note rv"><span class="em">🐘</span><div><h4>Слона едят по кусочку</h4><p class="small muted">Один случай за раз. Проработай три-пять конкретных эпизодов, и изменение обычно обобщается на все похожие ситуации само.</p></div></div>
+</section>
+
+<!-- TRIGGER -->
+<section class="sec" id="trigger">
+  <div class="sec-head rv">
+    <span class="num">05 · ШАГ 1 ГЛУБЖЕ</span>
+    <h2>Поиск триггера: синестезия</h2>
+    <p>Внутри конкретного случая есть доля секунды, когда человеку было нормально, и вдруг стало плохо. Этот момент называют синестезией. Именно к нему крепят ресурс на шаге 4.</p>
+  </div>
+  <div class="card rv" style="padding:24px 24px 16px">
+    <svg viewBox="0 0 800 280" role="img" aria-label="График состояния Нейта во времени">
+      <defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#0FB57D"/><stop offset=".55" stop-color="#0FB57D"/><stop offset=".66" stop-color="#FF3D68"/><stop offset="1" stop-color="#FF3D68"/></linearGradient></defs>
+      <line x1="40" y1="200" x2="780" y2="200" stroke="#E7E8F0" stroke-width="2"/>
+      <text x="40" y="34" font-family="Inter" font-size="13" font-weight="700" fill="#06855A">НОРМАЛЬНО</text>
+      <text x="40" y="186" font-family="Inter" font-size="13" font-weight="700" fill="#C4123F">ПЛОХО</text>
+      <path d="M60 72 L 170 70 L 300 76 L 430 72 L 500 78 C 520 80, 530 160, 560 165 L 680 170 L 770 168" fill="none" stroke="url(#lg)" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="515" cy="100" r="11" fill="#FF9F1C"/><circle cx="515" cy="100" r="22" fill="none" stroke="#FF9F1C" stroke-width="3" opacity=".4"/>
+      <rect x="440" y="16" width="200" height="40" rx="10" fill="#FFF0D9"/>
+      <text x="540" y="41" text-anchor="middle" font-family="Inter" font-size="14" font-weight="800" fill="#C46C00">⚡ синестезия, триггер</text>
+      <g font-family="Inter" font-size="13" font-weight="600" fill="#5D6079" text-anchor="middle">
+        <text x="90" y="232">Заходит</text><text x="90" y="250">в переговорную</text>
+        <text x="235" y="232">Садится,</text><text x="235" y="250">здоровается</text>
+        <text x="370" y="232">Начальник</text><text x="370" y="250">открывает встречу</text>
+        <text x="515" y="232" fill="#C46C00" font-weight="800">«Нейт, ты</text><text x="515" y="250" fill="#C46C00" font-weight="800">следующий»</text>
+        <text x="690" y="232">Ждёт своей</text><text x="690" y="250">очереди</text>
+      </g>
+    </svg>
+  </div>
+  <div class="grid2 rv" style="margin-top:24px">
+    <div>
+      <h4>Как найти</h4>
+      <ol class="steps" style="--dot:var(--c4)">
+        <li>Ассоциируй в конкретный случай.</li>
+        <li>Очень медленно веди человека по сцене: «Что ты видишь, слышишь, чувствуешь сейчас?»</li>
+        <li>Следи за малейшим сдвигом: вздох, мелькнувшее выражение, движение глаз, изменение дыхания. Тело выдаёт момент раньше слов.</li>
+        <li>Сразу спроси: «Ой, что это было?» или «Что происходит сейчас?»</li>
+        <li>Отмотай чуть назад и пройди этот кусок ещё раз. Реакция повторилась в той же точке? Значит, триггер найден.</li>
+      </ol>
+    </div>
+    <div class="plate tint4">
+      <h4>Насколько точно клиенты знают свой триггер</h4>
+      <p class="small"><b>Редко:</b> «В ту секунду, когда слышу её тон», «Когда у него начинают сдвигаться брови».</p>
+      <p class="small"><b>Чаще:</b> «Когда вижу начальника».</p>
+      <p class="small"><b>Ещё чаще:</b> «На работе».</p>
+      <p class="small">Чем точнее найден момент, тем точнее ляжет ресурс. На поиск синестезии стоит тратить столько времени, сколько нужно.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 2 -->
+<section class="sec" id="s2">
+  <div class="step-banner sb2 rv">
+    <div class="L">Д</div>
+    <div><span class="eyebrow" style="color:rgba(255,255,255,.85)">Шаг 2 из 4</span><h2>Диссоциация от проблемы</h2><p>Человека выводят из проблемного состояния. Пока он внутри проблемы, ресурс ему недоступен.</p></div>
+  </div>
+
+  <div class="big-quote rv" style="margin-top:0">«Мы сортируем по состояниям».<small>Джон Овердерф. В проблеме человек видит только проблему, поэтому советы «посмотри на светлую сторону» и «соберись» почти никогда не работают.</small></div>
+
+  <h3 class="rv" style="margin-top:0">Семь способов</h3>
+  <div class="grid3 rv">
+    <div class="card"><span class="tag t2">1</span><h4 style="margin-top:10px">Вопрос мимо темы</h4><p class="small muted">«Отличные ботинки, где купили?» Короткое замешательство выбивает из петли проблемы.</p></div>
+    <div class="card"><span class="tag t2">2</span><h4 style="margin-top:10px">Задача для логики</h4><p class="small muted">Посчитать, назвать что-то наоборот, вспомнить последовательность.</p></div>
+    <div class="card"><span class="tag t2">3</span><h4 style="margin-top:10px">Движение</h4><p class="small muted">Встать, пересесть в «кресло изменений», потянуться, взять ручку и записать.</p></div>
+    <div class="card"><span class="tag t2">4</span><h4 style="margin-top:10px">Смех</h4><p class="small muted">Рассмешить или удивить. Например, спросить с искоркой в глазах: «И как это тебе помогает?»</p></div>
+    <div class="card"><span class="tag t2">5</span><h4 style="margin-top:10px">Сменить себя</h4><p class="small muted">Коуч меняет тон, темп, позу. Клиент бессознательно следует за ним.</p></div>
+    <div class="card"><span class="tag t2">6</span><h4 style="margin-top:10px">Со стороны</h4><p class="small muted">Увидеть себя на экране, на другом месте в комнате, говорить о себе «он» или «она».</p></div>
+    <div class="card" style="grid-column:1/-1;background:linear-gradient(135deg,var(--c2s),#fff)"><span class="tag t2">7</span><h4 style="margin-top:10px">«Стоп!» (приём Мелиссы Тирс)</h4><p class="small">Как только клиент начинает снова уходить в проблему, коуч поднимает ладонь и твёрдо говорит «Стоп!». Потом объясняет: «Каждый раз, когда ты думаешь о проблеме, ты укрепляешь нейронный путь, по которому она запускается. Сейчас это шоссе, а к хорошему самочувствию ведёт заросшая тропа. Мы будем ходить по тропе, пока она не станет шоссе. А шоссе к проблеме пусть зарастает». Со временем клиент начинает сам себя останавливать.</p></div>
+  </div>
+
+  <h3 class="rv">По каким признакам видно, что шаг сделан</h3>
+  <div class="signs rv"><span>заметный сдвиг в теле</span><span>дыхание выровнялось</span><span>улыбка, оживление</span><span>в ответ на «каким хочешь быть?» звучит позитив</span></div>
+  <p class="rv small muted">Если на вопрос о желаемом состоянии человек отвечает «не хочу нервничать», он ещё в проблеме. Вернись к диссоциации или спроси: «А когда ты не нервничаешь, что ты чувствуешь?»</p>
+
+  <h3 class="rv">Если не получается</h3>
+  <div class="grid2 rv">
+    <div class="card"><h4>Снова и снова проваливается</h4><p class="small muted">Поменяй физиологию: попроси встать, встряхнуться, перейти в другое место. Повторяй «Стоп!» каждый раз.</p></div>
+    <div class="card"><h4>Любит рассказывать историю проблемы</h4><p class="small muted"><b>Рефрейм Овердерфа:</b> «Когда это изменится, у тебя будет отличная история». <b>Префрейм Ника Кемпа:</b> до начала рассказать о клиенте, который всю сессию говорил только о проблеме и ничего не поменял. <b>Крайний вариант:</b> честно предложить выбор между работой и пересказом.</p></div>
+  </div>
+</section>
+
+<!-- STEP 3 -->
+<section class="sec" id="s3">
+  <div class="step-banner sb3 rv">
+    <div class="L">А</div>
+    <div><span class="eyebrow" style="color:rgba(255,255,255,.85)">Шаг 3 из 4</span><h2>Ассоциация в ресурс</h2><p>Человек полностью входит в нужное состояние, здесь и сейчас. Коуч усиливает его, пока ресурс не станет сильнее проблемы.</p></div>
+  </div>
+
+  <h3 class="rv" style="margin-top:0">Каким должен быть ресурс</h3>
+  <div class="grid3 rv">
+    <div class="card"><div class="ico t3">➕</div><h4>Сформулирован в позитиве</h4><p class="small muted">«Хочу чувствовать спокойствие», «хочу быть собранным и бодрым». На «не хочу бояться» спроси: «А когда ты не боишься, что ты чувствуешь?»</p></div>
+    <div class="card"><div class="ico t3">🎛️</div><h4>В зоне контроля клиента</h4><p class="small muted">«Чтобы Синди перестала на меня кричать» не годится. «Да, это было бы хорошо. Управлять ты можешь только собой. Если Синди продолжит кричать, как ты хочешь себя чувствовать?»</p></div>
+    <div class="card"><div class="ico t3">🌗</div><h4>Подходит к контексту</h4><p class="small muted">Обычно ресурс приятен, но иногда это и гнев. Всё зависит от того, что поможет в конкретной ситуации.</p></div>
+  </div>
+
+  <div class="plate rv" style="margin-top:20px">
+    <h4>Состояние это целый «пакет»</h4>
+    <p class="small">В него входят физиология, дыхание, голос, убеждения и ценности. Страх: «я не справлюсь», ценность «безопасность». Уверенность: «у меня получится», ценность «поделиться тем, что знаю». Входя в ресурс, человек получает весь пакет сразу.</p>
+  </div>
+
+  <h3 class="rv">Как ввести в ресурс</h3>
+  <div class="grid2 rv">
+    <div class="card"><span class="tag t3">Быстрый путь</span><h4 style="margin-top:10px">Сразу в настоящем времени</h4><p class="small">Искать случай из прошлого не обязательно. Как только человек назвал состояние, мозг уже начинает его включать:</p><p class="small" style="background:var(--c3s);padding:12px 14px;border-radius:12px">«Каково это, когда ты чувствуешь себя уверенно… и пока ты чувствуешь уверенность сейчас, заметь, как ты стоишь… как дышишь… что думаешь о себе?»</p></div>
+    <div class="card"><span class="tag t3">Через воспоминание</span><h4 style="margin-top:10px">Конкретный момент из жизни</h4><p class="small">Найди время и место, где человек это чувствовал, и войди туда так же, как в проблему на шаге 1: настоящее время, детали, ощущения.</p></div>
+  </div>
+
+  <div class="dialog-card rv" style="margin-top:20px">
+    <h4><span class="tag t3">Пример из книги</span> Нейт ищет спокойствие</h4>
+    <div class="dialog">
+      <div class="msg coach"><div class="who">Коуч</div>Когда ты в последний раз был по-настоящему спокоен?</div>
+      <div class="msg client"><div class="who">Нейт</div>Месяцев шесть назад. На пляже в Пуэрто-Рико.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Ох, прекрасно. Значит, ты на пляже в Пуэрто-Рико. Лежишь на шезлонге, сидишь на песке?</div>
+      <div class="msg client"><div class="who">Нейт</div>Лежу на шезлонге, чувствую солнце на коже.</div>
+      <div class="msg coach"><div class="who">Коуч</div>И пока ты лежишь и чувствуешь солнце на коже, как себя чувствует всё тело?</div>
+      <div class="msg client"><div class="who">Нейт</div>Очень расслабленно, спокойно.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Где в теле ты чувствуешь это спокойствие?</div>
+      <div class="msg client"><div class="who">Нейт</div>В плечах.</div>
+      <div class="msg coach"><div class="who">Коуч</div>В плечах… А какого цвета это спокойствие?</div>
+      <div class="msg client"><div class="who">Нейт</div>Хм… красивый синий, как океан.</div>
+      <div class="msg coach"><div class="who">Коуч</div>Красивый синий, как океан, в плечах… Интересно, когда он разольётся по всему телу?</div>
+      <div class="msg client"><div class="who">Нейт</div>М-м-м… уже разлился.<span class="act">глубокий медленный выдох</span></div>
+    </div>
+  </div>
+
+  <h3 class="rv">Как усилить</h3>
+  <div class="grid2 rv">
+    <div class="card"><div class="ico t4">🪞</div><h4>Коуч входит первым</h4><p class="small muted">Нейт сказал «спокойно», и коуч сразу откинулся на спинку, расслабил плечи и произнёс слово «спокойно» самым спокойным голосом. Зеркальные нейроны клиента повторяют увиденное, так болельщик чуть двигается вместе с игроками.</p></div>
+    <div class="card"><div class="ico t4">✖️2</div><h4>Удвоить</h4><p class="small muted">«Интересно, каково будет, если удвоить это спокойствие?.. Приятно, правда? Удвой ещё раз».</p></div>
+    <div class="card"><div class="ico t4">🎨</div><h4>Субмодальности</h4><p class="small muted">Где в теле, какого цвета, какой температуры, есть ли звук, движется ли. Можно сначала сделать картинку больше, ярче и ближе, а потом попросить шагнуть в себя на картинке.</p></div>
+    <div class="card"><div class="ico t4">🔁</div><h4>Подхватывать всё</h4><p class="small muted">Любой признак ресурса усиливай и возвращай клиенту: «Да, ты <b>чувствуешь</b> это в груди». Чем увереннее он выглядит, тем больше признаков даёт, и круг раскручивается.</p></div>
+  </div>
+
+  <div class="big-quote rv">Если ресурс можно разглядеть только в лупу, он слишком мал.<small>Ричард Бэндлер</small></div>
+
+  <h3 class="rv" style="margin-top:0">По каким признакам видно, что шаг сделан</h3>
+  <p class="rv">Ищи <b>конгруэнтность</b>: слова и всё остальное (голос, паузы, темп, поза, жесты, цвет кожи) говорят одно и то же. Клиент говорит «я расслаблен» и теребит пальцы? Бессознательное сообщает, что он ещё не там.</p>
+
+  <h3 class="rv">Если не получается</h3>
+  <div class="grid2 rv">
+    <div class="card"><h4>1. Не до конца вышел из проблемы</h4><p class="small muted">Это всё ещё шаг 2. Вернись к диссоциации, задай вопрос совсем мимо темы.</p></div>
+    <div class="card"><h4>2. Не привык быть в ресурсе</h4><p class="small muted">Хватит и маленького ресурса, если прогнать петлю много раз. Каждый круг его немного увеличивает.</p></div>
+    <div class="card"><h4>3. Мешает скрытое убеждение</h4><p class="small muted">«Я не могу измениться», «это не сработает». Пока такой голос звучит фоном, техника буксует. Сначала работают с убеждением.</p></div>
+    <div class="card"><h4>4. Низкая самооценка</h4><p class="small muted">Человек считает, что хорошее состояние ему вообще недоступно. Тогда начинают с самооценки, а к заявленной проблеме возвращаются позже.</p></div>
+  </div>
+</section>
+
+<!-- STEP 4 -->
+<section class="sec" id="s4">
+  <div class="step-banner sb4 rv">
+    <div class="L">К</div>
+    <div><span class="eyebrow" style="color:rgba(255,255,255,.85)">Шаг 4 из 4</span><h2>Коллапс</h2><p>Находясь в сильном ресурсе, человек мысленно возвращается к триггеру проблемы. Обе нейросети горят одновременно и связываются.</p></div>
+  </div>
+
+  <div class="grid2 rv">
+    <div>
+      <h4>Что происходит</h4>
+      <p class="small">Срабатывает закон Хебба: сети, которые раньше никогда не загорались вместе, теперь горят одновременно. Появляется новый путь от триггера к ресурсу. Старый путь используется всё реже и начинает зарастать.</p>
+      <p class="small">Главное условие: <b>ресурс сильнее проблемы</b>. Тогда он «схлопывает» проблемное состояние, отсюда и название шага.</p>
+    </div>
+    <div class="plate tint4">
+      <h4>Результат</h4>
+      <p class="small">Ситуация, которая раньше запускала плохое самочувствие, теперь запускает хорошее. Старый триггер становится стартом нового пути.</p>
+    </div>
+  </div>
+
+  <div class="dialog-card rv" style="margin-top:24px">
+    <h4><span class="tag t4">Пример из книги</span> Коллапс у Нейта</h4>
+    <div class="dialog">
+      <div class="msg coach"><div class="who">Коуч</div>Шагни в себя на картинке, полностью: видишь пляж, слышишь океан, чувствуешь настоящее спокойствие.</div>
+      <div class="msg client"><div class="who">Нейт</div>М-м-м-м…<span class="act">большой вдох и медленный выдох</span></div>
+      <div class="msg coach"><div class="who">Коуч</div>Да, приятно быть настолько расслабленным, правда? <em>И пока ты чувствуешь это чудесное спокойствие, вернись мыслями в переговорную в прошлый понедельник, услышь голос начальника и заметь, что теперь по-другому…</em></div>
+      <div class="msg client"><div class="who">Нейт</div>Ого. Совсем иначе. Намного спокойнее.</div>
+    </div>
+  </div>
+
+  <h3 class="rv">Тонкости</h3>
+  <div class="grid2 rv">
+    <div class="card"><h4>💬 «Заметь, что теперь по-другому»</h4><p class="small muted">Формулировка направляет поиск на то, что уже изменилось. Даже если проблема ушла не полностью, человек найдёт разницу.</p></div>
+    <div class="card"><h4>🏷️ Больше не называть проблему проблемой</h4><p class="small muted">После коллапса говорят «та переговорная», «как было раньше». Проблема уже изменилась, и не нужно её оживлять.</p></div>
+    <div class="card"><h4>↕️ Порядок можно менять</h4><p class="small muted">Овердерф: сначала удобнее идти от ресурса к триггеру. Потом в естественном порядке: сначала триггер, затем ресурс. Так повторяют, пока триггер не начнёт запускать ресурс сам.</p></div>
+    <div class="card"><h4>⚡ Скорость</h4><p class="small muted">В момент соединения состояний важна быстрота. Поэтому у каждого состояния должна быть короткая «ручка»: слово, жест, образ, которые его сразу включают.</p></div>
+    <div class="card"><h4>⛄ Снежный ком</h4><p class="small muted">Ответ на «что теперь по-другому?» даёт новые слова и жесты, связанные с ресурсом. Их берут в следующую петлю, и ресурс растёт, как снежный ком с горы.</p></div>
+    <div class="card"><h4>🔄 До автоматизма</h4><p class="small muted">Повторяй, пока триггер не станет запускать ресурс так же автоматически, как раньше запускал проблему.</p></div>
+  </div>
+
+  <h3 class="rv">Если коллапса нет</h3>
+  <div class="grid3 rv">
+    <div class="card"><div class="ico t4">🪙</div><h4>Сортирует по сходству</h4><p class="small muted">Положи перед человеком две разные монеты и спроси, как они связаны. Одни сначала называют сходства, другие различия. Тот, кто ищет сходства, легко найдёт, что «всё так же». Помогает прямой вопрос о различиях.</p></div>
+    <div class="card"><div class="ico t4">🔋</div><h4>Ресурс слабее проблемы</h4><p class="small muted">Вернись на шаг 3: цвет, движение, вращение, удвоение. Как только видишь хорошее состояние, используй его.</p></div>
+    <div class="card"><div class="ico t4">🌫️</div><h4>Случай был размытым</h4><p class="small muted">«Пару раз за последние недели» не зажигает точную сеть, и ресурсу некуда лечь. Вернись на шаг 1, найди один момент и триггер.</p></div>
+  </div>
+</section>
+
+<!-- LOOPS -->
+<section class="sec" id="loops">
+  <div class="sec-head rv">
+    <span class="num">06 · ПОВТОРЫ</span>
+    <h2>Петли: почему по кругу идут несколько раз</h2>
+    <p>Мета-паттерн итеративен. Каждый круг немного уменьшает проблему и немного увеличивает ресурс. Даже скромный ресурс после нескольких петель меняет многое.</p>
+  </div>
+  <div class="card rv">
+    <div class="bars" id="bars">
+      <div class="barrow"><small>Петля 1</small><div class="bartrack"><i class="bg1" style="width:0" data-w="70%">проблема</i><i class="bg3" style="width:0" data-w="30%">ресурс</i></div></div>
+      <div class="barrow"><small>Петля 2</small><div class="bartrack"><i class="bg1" style="width:0" data-w="50%">проблема</i><i class="bg3" style="width:0" data-w="50%">ресурс</i></div></div>
+      <div class="barrow"><small>Петля 3</small><div class="bartrack"><i class="bg1" style="width:0" data-w="28%">проблема</i><i class="bg3" style="width:0" data-w="72%">ресурс</i></div></div>
+      <div class="barrow"><small>Петля 4</small><div class="bartrack"><i class="bg1" style="width:0" data-w="10%"></i><i class="bg3" style="width:0" data-w="90%">ресурс запускается от триггера сам</i></div></div>
+    </div>
+    <p class="small muted">Иллюстрация принципа. Цифр в книге нет.</p>
+  </div>
+  <div class="grid3 rv" style="margin-top:20px">
+    <div class="plate"><h4>Между петлями</h4><p class="small">Карсоны советуют сбить состояние и запустить связку заново. Овердерф добавляет: в самом начале, пока клиент в ресурсе, его можно несколько раз подряд быстро переводить к триггеру без сброса.</p></div>
+    <div class="plate"><h4>Внутри сессии</h4><p class="small">Петли бывают целыми и частичными. Иногда крутят только шаги 3 и 4, добавляя каждый раз новый ресурс.</p></div>
+    <div class="plate"><h4>Между случаями</h4><p class="small">Пройди 3–5 конкретных эпизодов. После этого изменение обычно распространяется на всю категорию ситуаций.</p></div>
+  </div>
+</section>
+<!-- COACHING -->
+<section class="sec" id="coaching">
+  <div class="sec-head rv">
+    <span class="num">07 · ПРИМЕНЕНИЕ</span>
+    <h2>Коучинговый паттерн: АДАК в разговоре</h2>
+    <p>Разговорная версия мета-паттерна. Не нужно просить клиента вставать в круг или вытягивать руки, поэтому она хорошо подходит для деловой обстановки. Карсоны начинают с неё каждую сессию.</p>
+  </div>
+
+  <div class="grid2 rv" style="gap:12px">
+    <div class="plate"><span class="tag" style="background:#fff">Вход</span><h4 style="margin-top:10px">«Что ты хочешь проработать?»</h4><p class="small">В оригинале «work through»: пройти насквозь, до конца. В русском ту же работу делает приставка «про-». Сравни ощущения от «поработать над проблемой» и «проработать проблему»: во втором есть движение и финал.</p></div>
+    <div class="plate tint1"><span class="tag t1">А · проблема</span><h4 style="margin-top:10px">«Расскажи про конкретный момент, когда это было. Что ты видишь, слышишь, чувствуешь?»</h4><p class="small">Конкретное время и место, настоящее время. Параллельно коуч ищет триггер и калибрует, как выглядит проблема.</p></div>
+    <div class="plate tint2"><span class="tag t2">Д · движение</span><h4 style="margin-top:10px">«Так было раньше… А каким ты хочешь быть?»</h4><p class="small">Первая половина фразы отправляет проблему в прошлое. Вторая просит создать образ будущего. Обе сопровождаются жестами (схема ниже).</p></div>
+    <div class="plate tint3"><span class="tag t3">А · ресурс</span><h4 style="margin-top:10px">«Каково это, когда ты чувствуешь себя уверенно? Где в теле ты это чувствуешь?»</h4><p class="small">В «когда ты <b>чувствуешь себя уверенно</b>» встроена команда. Вопрос «где в теле» заранее предполагает, что ощущение есть, и человек находит его.</p></div>
+    <div class="plate tint4" style="grid-column:1/-1"><span class="tag t4">К · коллапс</span><h4 style="margin-top:10px">«И пока ты чувствуешь эту уверенность, посмотри на ту старую ситуацию и заметь, как она изменилась».</h4><p class="small">Если триггер известен точно, называй его: «Пока ты чувствуешь уверенность, увидь, как начальник хмурится, и заметь, что теперь по-другому».</p></div>
+  </div>
+
+  <h3 class="rv">«Движение»: жесты коуча</h3>
+  <div class="grid2 rv" style="align-items:center">
+    <div class="card" style="padding:16px">
+      <svg viewBox="0 0 520 360" role="img" aria-label="Схема жестов коуча глазами клиента">
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#FF3D68"/></marker>
+          <marker id="ar2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0FB57D"/></marker>
+        </defs>
+        <rect x="0" y="0" width="520" height="360" rx="16" fill="#F4F5F9"/>
+        <text x="260" y="30" text-anchor="middle" font-family="Inter" font-size="13" font-weight="800" fill="#5D6079" letter-spacing="1">ТАК ВИДИТ КЛИЕНТ</text>
+        <circle cx="260" cy="110" r="36" fill="#15152B"/>
+        <rect x="212" y="152" width="96" height="140" rx="40" fill="#15152B"/>
+        <path d="M220 175 C 190 210, 160 240, 130 270" stroke="#15152B" stroke-width="18" stroke-linecap="round" fill="none"/>
+        <path d="M300 175 C 330 150, 360 120, 382 92" stroke="#15152B" stroke-width="18" stroke-linecap="round" fill="none"/>
+        <ellipse cx="390" cy="80" rx="20" ry="24" fill="#0FB57D"/>
+        <path d="M200 205 C 160 250, 120 290, 70 312" stroke="#FF3D68" stroke-width="4" stroke-dasharray="7 6" fill="none" marker-end="url(#ar1)"/>
+        <path d="M410 120 L 440 72" stroke="#0FB57D" stroke-width="4" fill="none" marker-end="url(#ar2)"/>
+        <g font-family="Inter" font-size="14" font-weight="700">
+          <text x="24" y="196" fill="#C4123F">«Так было</text><text x="24" y="214" fill="#C4123F">раньше…»</text>
+          <text x="24" y="344" fill="#5D6079" font-weight="600" font-size="12.5">правая рука коуча: вниз и в сторону</text>
+          <text x="400" y="160" fill="#06855A">«А каким ты</text><text x="400" y="178" fill="#06855A">хочешь быть?»</text>
+          <text x="330" y="344" fill="#5D6079" font-weight="600" font-size="12.5">левая ладонь вверх, к клиенту</text>
+        </g>
+        <g font-family="Inter" font-size="12" font-weight="800">
+          <rect x="24" y="44" width="120" height="28" rx="14" fill="#FFE4EA"/><text x="84" y="63" text-anchor="middle" fill="#C4123F">ПРОШЛОЕ клиента</text>
+          <rect x="372" y="200" width="128" height="28" rx="14" fill="#D9F6EA"/><text x="436" y="219" text-anchor="middle" fill="#06855A">БУДУЩЕЕ клиента</text>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <ol class="steps" style="--dot:var(--c2)">
+        <li><b>«Так было раньше…»</b> Правая рука коуча уходит вниз и в сторону, будто смахивает проблему. Для клиента это его левая сторона, а у большинства людей прошлое расположено слева или сзади.</li>
+        <li><b>«…а каким ты хочешь быть?»</b> Левая ладонь коуча поднимается чуть выше уровня глаз клиента, с его правой стороны. Там у большинства будущее, а взгляд вверх-вправо связан с конструированием образов.</li>
+        <li><b>Голос и энергия.</b> На второй половине фразы коуч ускоряет темп, поднимает энергию. Если клиент хочет спокойствия, наоборот, устраивается удобнее и делает глубокий вдох.</li>
+        <li><b>Ресурс «вталкивается».</b> Если клиент назвал состояние, но не вошёл в него, коуч мягко двигает раскрытую ладонь к нему: «И каково это, когда ты чувствуешь себя уверенно?»</li>
+      </ol>
+      <p class="small muted">Глазные сигналы доступа это обобщение, у части людей схема зеркальная. Жесты можно делать крупно и заметно: клиент легко за ними следует.</p>
+    </div>
+  </div>
+
+  <div class="note rv"><span class="em">🐘</span><div><h4>Синий слон</h4><p class="small muted">Попробуй не думать о синем слоне. Пока клиент говорит «не хочу волноваться», мозг держит в фокусе волнение. Поэтому в коучинговом паттерне ресурс всегда формулируют через то, чего человек хочет.</p></div></div>
+</section>
+
+<!-- CLASSIC -->
+<section class="sec" id="classic">
+  <div class="sec-head rv">
+    <span class="num">08 · ПРИМЕНЕНИЕ</span>
+    <h2>Классические техники НЛП через АДАК</h2>
+    <p>Выбери технику и посмотри, где у неё каждый из четырёх шагов. Ниже каждой есть вывод, который даёт взгляд через мета-паттерн.</p>
+  </div>
+  <div class="tabs rv" id="patTabs"></div>
+  <div id="patPane" class="rv"></div>
+</section>
+
+<!-- SELF -->
+<section class="sec" id="self">
+  <div class="sec-head rv">
+    <span class="num">09 · ПРИМЕНЕНИЕ</span>
+    <h2>Самокоучинг: АДАК для себя</h2>
+    <p>Схема работает и без коуча. Её можно прогнать заранее, до неприятной ситуации, и повторить столько раз, сколько нужно. Отмечай шаги по мере прохождения.</p>
+  </div>
+  <div class="plate rv" style="margin-bottom:20px">
+    <h4>Сначала реши, нужна ли эмоции замена</h4>
+    <p class="small">Каждая эмоция зачем-то нужна. Страх готовит тело бежать, гнев готовит защищаться. Если угроза реальна, такая эмоция полезна. А вот гнев на ребёнка, который случайно разбил тарелку, или страх перед презентацией, из-за которого не можешь говорить, лучше заменить.</p>
+  </div>
+  <div class="check rv">
+    <label style="--k:var(--c1)"><input type="checkbox"><div><span class="tag t1">А · проблема</span><h4 style="margin-top:8px">Найди триггер и войди в момент</h4><p class="small muted">Вспомни, когда и где тебе бывает плохо. С кем ты был? Что происходило? Общие черты подскажут триггер: место, человек, событие. Представь, что ты снова там. Видишь то, что видел, слышишь то, что слышал. Должна появиться часть того же чувства.</p></div></label>
+    <label style="--k:var(--c2)"><input type="checkbox"><div><span class="tag t2">Д · выход</span><h4 style="margin-top:8px">Спроси, кем ты будешь, когда это уйдёт</h4><p class="small muted">Задай цепочку вопросов: «Что для меня важно в этой презентации? Успех на работе. А что важно в успехе? Повышение. А в повышении? Обеспечить семью. И кто я, когда обеспечиваю семью? Добытчик». Если трудно представить нового себя, возьми человека, реального или вымышленного, который справился бы с ситуацией лучше. Увидь этот образ перед собой.</p></div></label>
+    <label style="--k:var(--c3)"><input type="checkbox"><div><span class="tag t3">А · ресурс</span><h4 style="margin-top:8px">Шагни в образ и удвой ощущение</h4><p class="small muted">Когда образ ясен, мысленно шагни в него и почувствуй, как это хорошо. Увидь его снова, шагни снова, и пусть хорошее чувство удвоится. Ещё раз. Состояние должно стать сильным и настоящим.</p></div></label>
+    <label style="--k:var(--c4)"><input type="checkbox"><div><span class="tag t4">К · коллапс</span><h4 style="margin-top:8px">Отнеси ресурс в ту ситуацию</h4><p class="small muted">Войди в ресурс ещё раз и, пока он растёт в теле, представь, что ты снова там, где была проблема. Заметь, что изменилось. Повтори несколько раз, чтобы закрепить новую реакцию.</p></div></label>
+  </div>
+</section>
+
+<!-- LIFE -->
+<section class="sec" id="life">
+  <div class="sec-head rv">
+    <span class="num">10 · ВОКРУГ НАС</span>
+    <h2>АДАК в рекламе, кино, речах и бизнесе</h2>
+    <p>Когда схема становится привычной, её начинаешь замечать почти везде. Это полезно и для своей работы, и для защиты: легче понять, когда тебя ведут по этим шагам.</p>
+  </div>
+  <div class="tabs rv" id="lifeTabs"></div>
+  <div id="lifePane" class="rv"></div>
+</section>
+
+<!-- FIX -->
+<section class="sec" id="fix">
+  <div class="sec-head rv">
+    <span class="num">11 · ДИАГНОСТИКА</span>
+    <h2>Если не сработало</h2>
+    <p>Мета-паттерн показывает, на каком шаге случился сбой. Выбери, что ты видишь у клиента.</p>
+  </div>
+  <div class="ts rv">
+    <div class="ts-list" id="tsList"></div>
+    <div class="ts-out" id="tsOut"></div>
+  </div>
+</section>
+
+<!-- CHEAT -->
+<section class="sec" id="cheat">
+  <div class="sec-head rv">
+    <span class="num">12 · ШПАРГАЛКА</span>
+    <h2>Вся схема на одном экране</h2>
+    <p>Сохрани или распечатай: при печати на странице останется только шпаргалка.</p>
+    <div class="btns" style="margin-top:20px"><button class="btn dark" onclick="window.print()">🖨 Распечатать шпаргалку</button></div>
+  </div>
+  <div class="cheat rv">
+    <div class="col"><div class="hd sb1"><b>А</b><span>Ассоциация в проблему</span></div><div class="bd">
+      <small>Цель</small>Зажечь сеть проблемы, найти триггер, снять базовую линию
+      <small>Фразы</small>«Когда это было в последний раз?» «Где ты?» «Что ты видишь, слышишь, чувствуешь?»
+      <small>Признаки</small>Настоящее время, изменение дыхания, цвета кожи, голоса
+      <small>Ошибка</small>Обсуждать проблему «вообще», без конкретного случая
+    </div></div>
+    <div class="col"><div class="hd sb2"><b>Д</b><span>Диссоциация</span></div><div class="bd">
+      <small>Цель</small>Вывести из проблемы, открыть доступ к ресурсам
+      <small>Фразы</small>«Так было раньше… А каким ты хочешь быть?» «Стоп!» «Чувствуешь запах попкорна?»
+      <small>Признаки</small>Сдвиг в теле, спокойное дыхание, позитивный ответ
+      <small>Ошибка</small>Искать ресурс, пока человек ещё в проблеме
+    </div></div>
+    <div class="col"><div class="hd sb3"><b>А</b><span>Ассоциация в ресурс</span></div><div class="bd">
+      <small>Цель</small>Полностью включить нужное состояние и сделать его сильнее проблемы
+      <small>Фразы</small>«Каково это, когда ты чувствуешь…?» «Где в теле?» «Какого цвета?» «Удвой»
+      <small>Признаки</small>Конгруэнтность: слова, голос и тело совпадают
+      <small>Ошибка</small>Ресурс в негативе («не бояться») или вне контроля клиента
+    </div></div>
+    <div class="col"><div class="hd sb4"><b>К</b><span>Коллапс</span></div><div class="bd">
+      <small>Цель</small>Зажечь обе сети вместе и связать триггер с ресурсом
+      <small>Фразы</small>«И пока ты чувствуешь это, вернись в ту ситуацию и заметь, что теперь по-другому»
+      <small>Признаки</small>Физиология проблемы не возвращается при мысли о триггере
+      <small>Ошибка</small>Закончить на хорошем самочувствии и не отнести его в контекст
+    </div></div>
+  </div>
+  <div class="plate rv" style="margin-top:16px;display:flex;gap:24px;flex-wrap:wrap">
+    <div><b>Петли:</b> <span class="small">повторяй круг, пока триггер не начнёт запускать ресурс сам</span></div>
+    <div><b>Случаи:</b> <span class="small">3–5 конкретных эпизодов, дальше обобщается</span></div>
+    <div><b>Правило:</b> <span class="small">ресурс сильнее проблемы</span></div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section class="sec" id="quiz">
+  <div class="sec-head rv">
+    <span class="num">13 · ЗАКРЕПЛЕНИЕ</span>
+    <h2>Проверь себя</h2>
+    <p>Десять вопросов. После ответа появится объяснение.</p>
+  </div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="score" id="score" style="margin-top:16px"><span id="scoreTxt">0 из 10</span><div class="bar"><i id="scoreBar"></i></div><button class="chip" id="quizReset" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">Заново</button></div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="logo" style="margin-bottom:16px"><span class="dots"><i class="bg1"></i><i class="bg2"></i><i class="bg3"></i><i class="bg4"></i></span>АДАК</div>
+    <p>Материал основан на книге Шона и Сары Карсон «The Meta Pattern» (серия NLP Mastery, предисловие Джона Овердерфа). Примеры диалогов пересказаны по книге и адаптированы на русский.</p>
+    <p style="margin-top:12px">Сайт создан для обучения. Если речь о травме, тяжёлом состоянии или фобии, работай вместе со специалистом.</p>
+  </div>
+</footer>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>s;
+
+/* ---------- progress, nav ---------- */
+const prog=$('#progress');
+function onScroll(){const h=document.documentElement;const p=h.scrollTop/(h.scrollHeight-h.clientHeight);prog.style.width=(p*100)+'%';}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+const links=$$('.sidenav a');const secs=links.map(a=>document.querySelector(a.getAttribute('href')));
+const navObs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id));}})},{rootMargin:'-40% 0px -55% 0px'});
+secs.forEach(s=>s&&navObs.observe(s));
+const side=$('#sidenav');$('#menuBtn').addEventListener('click',()=>side.classList.toggle('open'));
+links.forEach(l=>l.addEventListener('click',()=>side.classList.remove('open')));
+
+/* ---------- reveal ---------- */
+const rv=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');rv.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px'});
+$$('.rv').forEach(el=>rv.observe(el));
+
+/* ---------- cycle ---------- */
+const cyc=[
+ {c:'var(--c1)',s:'var(--c1s)',k:'Шаг 1 · А',t:'Ассоциация в проблему',txt:'Человек вспоминает один конкретный случай и проживает его в настоящем времени. Загорается нейросеть проблемы, а ты видишь, как она выглядит в теле, и ищешь точный триггер.',q:'«Когда это было в последний раз? Где ты? Что ты видишь, слышишь, чувствуешь?»',sig:'настоящее время, сбилось дыхание, изменился голос',a:'#s1'},
+ {c:'var(--c2)',s:'var(--c2s)',k:'Шаг 2 · Д',t:'Диссоциация от проблемы',txt:'Человека выводят из проблемного состояния. В проблеме ресурсы ему недоступны: мы сортируем память по состояниям. Хватает вопроса мимо темы, движения, смеха или взгляда на себя со стороны.',q:'«Так было раньше… А каким ты хочешь быть?»',sig:'сдвиг в теле, ровное дыхание, ответ в позитиве',a:'#s2'},
+ {c:'var(--c3)',s:'var(--c3s)',k:'Шаг 3 · А',t:'Ассоциация в ресурс',txt:'Человек полностью входит в нужное состояние здесь и сейчас. Коуч входит в него первым и усиливает: где в теле, какого цвета, удвоить. Ресурс должен стать сильнее проблемы.',q:'«Каково это, когда ты чувствуешь себя уверенно? Где в теле ты это чувствуешь?»',sig:'конгруэнтность: слова, голос и поза совпадают',a:'#s3'},
+ {c:'var(--c4)',s:'var(--c4s)',k:'Шаг 4 · К',t:'Коллапс',txt:'Не выходя из ресурса, человек возвращается мыслями к триггеру. Обе сети горят одновременно и связываются. После нескольких повторов триггер начинает запускать ресурс.',q:'«И пока ты чувствуешь это, вернись в ту ситуацию и заметь, что теперь по-другому»',sig:'при мысли о триггере физиология проблемы не возвращается',a:'#s4'}
+];
+const panel=$('#cyclePanel'),svg=$('#cycleSvg'),segs=$$('#cycleSvg .seg');
+function showCyc(i){
+  const d=cyc[i];svg.classList.add('has-active');segs.forEach((s,j)=>s.classList.toggle('on',j===i));
+  $('#cycCenter').textContent=['А','Д','А','К'][i];$('#cycCenter').setAttribute('fill',getComputedStyle(document.documentElement).getPropertyValue(d.c.slice(4,-1)).trim());
+  $('#cycSub').textContent='шаг '+(i+1)+' из 4';
+  panel.style.background=d.s;
+  panel.innerHTML=`<div class="k" style="color:${d.c}">${d.k}</div><h3>${d.t}</h3><p>${d.txt}</p>
+  <div style="margin-top:16px;background:#fff;border-radius:14px;padding:14px 16px"><small style="font-weight:800;font-size:12px;letter-spacing:.06em;color:var(--muted)">КАК ЗВУЧИТ</small><p style="font-weight:600">${d.q}</p></div>
+  <p class="small" style="margin-top:12px"><b>Признаки:</b> ${d.sig}</p>
+  <div class="cycle-nav">${cyc.map((x,j)=>`<button class="chip ${j===i?'on':''}" data-j="${j}">${j+1}</button>`).join('')}<a href="${d.a}" class="chip" style="display:inline-flex;align-items:center;text-decoration:none">Подробнее →</a></div>`;
+  panel.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>showCyc(+b.dataset.j));
+}
+segs.forEach(s=>s.addEventListener('click',()=>showCyc(+s.dataset.i)));
+showCyc(0);
+
+/* ---------- neuro ---------- */
+const nn=$('#nn'),nnCap=$('#nnCap'),nnBtns=$$('#nnBtns [data-s]');
+const caps={
+ 1:'<b>Шаг 1.</b> Клиент вспоминает конкретный случай. Триггер запускает сеть проблемы по старой, хорошо протоптанной дорожке.',
+ 2:'<b>Шаг 2.</b> Состояние сбито. Сеть проблемы затихает: химическая волна эмоции без подпитки уходит примерно за 90 секунд. Ресурсы снова доступны.',
+ 3:'<b>Шаг 3.</b> Клиент полностью в ресурсе. Сеть ресурса горит ярко, ярче, чем горела проблема.',
+ 4:'<b>Шаг 4.</b> Пока ресурс горит, клиент возвращается к триггеру. Обе сети активны одновременно, между ними появляются связи (долговременная потенциация, закон Хебба). От триггера тянется новая дорожка к ресурсу.',
+ 5:'<b>После нескольких петель.</b> Триггер запускает ресурс. Старой дорожкой почти не пользуются, и она зарастает (нейронный дарвинизм).'
+};
+let nnTimer=null;
+function setNN(s){nn.dataset.s=s;nnCap.innerHTML=caps[s];nnBtns.forEach(b=>b.classList.toggle('on',b.dataset.s==s));}
+nnBtns.forEach(b=>b.addEventListener('click',()=>{clearInterval(nnTimer);setNN(b.dataset.s)}));
+$('#nnPlay').addEventListener('click',()=>{clearInterval(nnTimer);let s=1;setNN(s);nnTimer=setInterval(()=>{s++;if(s>5){clearInterval(nnTimer);return}setNN(s)},2600)});
+
+/* ---------- bars ---------- */
+const barsObs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('i').forEach(i=>i.style.width=i.dataset.w);barsObs.disconnect()}}),{threshold:.4});
+barsObs.observe($('#bars'));
+
+/* ---------- generic strip ---------- */
+const L=['А · проблема','Д · выход','А · ресурс','К · коллапс'];
+const strip=a=>`<div class="strip">${a.map((t,i)=>`<div class="s${i+1}"><span class="tag t${i+1}">${L[i]}</span><p>${t}</p></div>`).join('')}</div>`;
+function tabs(box,pane,data,render){
+  const b=$(box),p=$(pane);
+  b.innerHTML=data.map((d,i)=>`<button class="tab" data-i="${i}">${d.n}</button>`).join('');
+  const show=i=>{b.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',j===i));p.innerHTML=`<div class="pane">${render(data[i])}</div>`};
+  b.querySelectorAll('.tab').forEach(t=>t.onclick=()=>show(+t.dataset.i));show(0);
+}
+
+/* ---------- classic patterns ---------- */
+const pats=[
+ {n:'Круг совершенства',d:'Клиент представляет круг на полу, наполняет его ресурсами и шагает внутрь.',s:['Обсудить ситуацию, в которой хочется чувствовать себя иначе.','Представить круг на полу и решить, какой ресурс в него положить.','Шагнуть в круг и полностью прожить ресурс.','Вспомнить ту ситуацию и заметить, как она меняется, когда с тобой твой круг.'],i:'Частая ошибка: сделать красивый круг и не привязать его к контексту. В книге это показано с иронией: «Чувствуешь себя потрясающе? Отлично, с вас сто долларов!» В кабинете клиенту хорошо, в жизни ничего не меняется. Без шагов 1 и 4 техника превращается в приятное упражнение.'},
+ {n:'Застрял · Мета · Ресурс',d:'Три точки в комнате, по одной на каждое состояние.',s:['Встать в точку «Застрял» и рассказать о последнем случае, пока не проявится проблемное состояние.','Перейти в «Мета» и смотреть на «того тебя, вон там», описывая его в третьем лице: «у него опущены плечи».','Посмотреть на «Ресурс», описать идеального себя. Коуч входит в ресурс первым. Затем шагнуть в эту точку.','Вернуться в «Застрял», взяв ресурсы с собой. Повторять, каждый раз быстрее.'],i:'Это мета-паттерн в чистом виде, разложенный по полу пространственными якорями. Каждый переход из «Ресурса» в «Застрял» и есть коллапс.'},
+ {n:'Визуальная сборка',d:'Работа с внутренним конфликтом двух частей.',s:['Обсудить конфликт: «часть меня хочет, а часть не хочет».','Положить каждую часть на свою ладонь и найти для неё символ. Части разведены, как подушка между братьями на заднем сиденье машины.','Укрупнять позитивные намерения частей, пока не найдётся общее. Спросить, чему части могут научить друг друга. Новая объединённая часть и есть ресурс.','Руки сами сходятся (гипнотическая каталепсия), появляется новый символ, и клиент забирает его в сердце или тело.'],i:'Если человек уже взвесил все плюсы и минусы, а решение так и не принято, проблема в конфликте частей. Здесь нужна диссоциация частей друг от друга, и список «за и против» не поможет.'},
+ {n:'V-K диссоциация',d:'Быстрое избавление от фобии.',s:['Минимальная ассоциация. Обычно хватает того, что человек называет, чего боится.','Главный шаг. Старый кинотеатр: выплыть в будку киномеханика и смотреть на себя, который смотрит фильм (двойная диссоциация). Или фильм на крошечном экране телефона. Две чёрно-белые стоп-картинки «я в безопасности» до и после события ограничивают фильм.','Смотреть фильм от безопасной сцены до безопасной с изменениями: очень быстро, задом наперёд, под цирковую музыку. Человек видит триггер и остаётся спокоен или смеётся. Миндалина учится реагировать иначе.','Войти в фильм и прожить его вперёд или просто вспомнить и заметить разницу. Хорошо проверить в реальности, например, сходить в пингвинарий.'],i:'По сути V-K диссоциация это шаг Д, вынесенный в отдельную технику. Её приёмы можно брать в любую работу, где нужно удержать человека на безопасной дистанции.'},
+ {n:'Взмах (Swish)',d:'Замена привычки, например грызть ногти.',s:['Найти точную «картинку-триггер»: что человек видит прямо перед тем, как начинает грызть ногти.','«Очисти экран». С привычками сильной эмоции обычно нет, поэтому этого достаточно.','Создать образ себя, каким хочешь быть. Образ остаётся диссоциированным. Ресурс здесь это желание стать этим человеком. Исследования показывают: если войти в результат, мотивация к нему падает. Поэтому образ держат почти на расстоянии вытянутой руки.','Уменьшить «новое я» до почтовой марки, вставить в картинку-триггер, отбросить картинку далеко. Возвращается она уже образом «нового я». Очистить экран и повторить.'],i:'Студентам трудно вписать взмах в схему, потому что «новое я» не ассоциируют. Ответ в том, что ресурс здесь это желание. Сам взмах это быстрый визуальный коллапс, и его можно встроить в любую работу.'},
+ {n:'Шестишаговый рефрейминг',d:'Изменение нежелательного поведения через бессознательное.',s:['Обсудить проблему.','Установить связь с бессознательным: сигналы «да» и «нет» в теле. Проблема превращается в сигнал, и человек от неё отстраняется.','«Загляни внутрь, спроси о позитивном намерении… поблагодари бессознательное». Попросить его создать 20 и больше вариантов нового поведения.','Бессознательное выбирает один вариант и обещает пробовать его две недели в контексте проблемы.'],i:'Авторы считают главным ресурсом этой техники «транс благодарности». Он возникает из повторов «загляни внутрь… поблагодари», когда человек снова и снова закрывает и открывает глаза (фракционирование).'},
+ {n:'Классический гипноз',d:'Сессия с прямыми внушениями.',s:['До транса исследовать проблему и найти точный триггер.','Индукция в «кресле изменений», углубление (например, лестница), убедители.','Управляемая визуализация, «внутренняя комната управления», прямые внушения уверенным голосом.','Привязать ресурс к триггеру: «Ты чувствуешь уверенность, когда видишь лицо начальника». Повторять.'],i:'Если подарить человеку в трансе приятное состояние и просто вывести его, работа не закончена: в жизни он встретит те же триггеры. Коллапс нужен и в гипнозе.'},
+ {n:'Мечтающая рука',d:'Гипнотическая техника с левитацией руки.',s:['Заранее выяснить контексты и триггеры. Пригласить в кресло изменений.','Индукция: «Какая рука ощущается иначе?» Рука начинает подниматься.','«Пусть бессознательное находит все случаи, когда ты чувствовал уверенность, и с каждым рука поднимается чуть выше». Сон или символ добавляют новые слои ресурса.','«Пока рука опускается, бессознательное размещает эти ресурсы ровно там, где они нужны». Плюс назвать конкретные контексты.'],i:'Подъём руки собирает ресурс, опускание приносит его в жизнь. Названные заранее триггеры делают коллапс точным.'}
+];
+tabs('#patTabs','#patPane',pats,d=>`<p class="muted" style="margin-bottom:4px">${d.d}</p>${strip(d.s)}<div class="insight"><b>💡 Вывод:</b><span class="small">${d.i}</span></div>`);
+
+/* ---------- life ---------- */
+const life=[
+ {n:'Реклама',h:`<h4>Обезболивающее</h4>${strip(['Женщина держится за голову, вокруг грохочут отбойные молотки.','Человек в белом халате в лаборатории объясняет, как работает лекарство.','Она принимает таблетку.','И вот она уже играет во дворе с шумными детьми, улыбаясь.'])}<h4 style="margin-top:24px">Страховая компания</h4>${strip(['Авария.','Звучит знакомая песенка компании.','Приходят деньги по страховке.','Машину починили, всё как новое.'])}<p class="small muted">Реклама работает с общим опытом: головная боль или мелкая авария знакома почти каждому.</p>`},
+ {n:'Сказка',h:`<h4>Золушка: два цикла подряд</h4>${strip(['Золушка моет пол, сёстры не пускают её на бал.','Появляется фея-крёстная.','Платье, карета, бал, принц.','Полночь, она возвращается домой, но уже другим человеком.'])}${strip(['Принц приносит туфельку, а Золушку прячут на кухне.','Принц спрашивает: «В доме есть кто-то ещё?»','Туфелька подошла!','Свадьба, жили долго и счастливо.'])}<p class="small muted">Хорошие истории часто проходят мета-паттерн несколько раз, как петли в сессии.</p>`},
+ {n:'Кино',h:`<h4>«Матрица»</h4>${strip(['Томас Андерсон живёт обычной жизнью, пока за ним не начинает охотиться агент Смит.','Морфеус помогает ему сбежать и показывает Матрицу.','Нео становится Избранным и побеждает Смита.','Нео возвращается в Матрицу, чтобы закончить битву.'])}<h4 style="margin-top:24px">«Волшебник страны Оз»</h4>${strip(['Торнадо уносит Дороти.','Она идёт по дороге из жёлтого кирпича и встречает Страшилу, Железного Дровосека и Льва.','Пройдя испытания, понимает, что сила всегда была внутри неё.','Возвращается в Канзас обновлённой.'])}`},
+ {n:'Речь',h:`<h4>Черчилль, 4 июня 1940</h4>${strip(['«Хотя огромные пространства Европы и многие старые и знаменитые государства пали или могут пасть под власть гестапо и всего мерзкого аппарата нацистского правления…»','«…мы не ослабеем и не дрогнем. Мы пойдём до конца».','«Мы будем сражаться во Франции, на морях и океанах, в воздухе… на пляжах, на посадочных площадках, в полях и на улицах, в холмах…»','«Мы никогда не сдадимся».'])}<p class="small muted">Дальше в той же речи идёт второй цикл: «если этот остров будет покорён» → «наша империя за морями» → «под защитой флота продолжит борьбу» → «пока Новый Свет не выйдет на помощь старому». Так же построены речь Обамы в 2008 году и Геттисбергская речь Линкольна. Предвыборная речь в общем виде: «мой соперник вернёт нас в тёмные века» → «но есть путь лучше» → «со мной нас ждёт светлое будущее» → «приходите голосовать».</p>`},
+ {n:'Продажа',h:`<h4>Покупка машины</h4>${strip(['У клиента нет машины, и надоел общественный транспорт. Или старая машина разваливается.','Прогулка по площадке. Взгляд останавливается на синей «Хонде Сивик».','Посидеть в салоне, вдохнуть запах кожи, послушать мотор, тест-драйв. Продавец помогает представить жизнь с этой машиной.','«Давайте пройдём в офис и обсудим условия».'])}<div class="insight"><b>🔁 Возражения:</b><span class="small">каждое возражение это новая маленькая петля. «Дорого» (А) → «посмотрим цену по справочнику» (Д) → «вы будете рады, что купили её» (А) → «оформляем?» (К).</span></div>`},
+ {n:'Презентация',h:`${strip(['Покажи, зачем им слушать. «Сколько из вас месяцами ждали возмещения расходов?» работает лучше, чем «Сейчас я расскажу о новой системе учёта».','Факты и детали. Только нужные. Повторяй главное: «скажи, что скажешь; скажи; скажи, что сказал».','Как они будут себя чувствовать, когда делают то, чего ты хочешь. На тренинге навык дробят на шаги, каждый из которых легко сделать.','Следующий конкретный шаг, пока аудитория ещё в ресурсе: подписать договор, вернуться за стол и попробовать новую систему.'])}<div class="insight"><b>☕ После обеда:</b><span class="small">если зал сонный, сначала отдельная петля на состояние самой аудитории: пошутить, предложить встать и потянуться. Без этого остальные шаги не сработают.</span></div>`},
+ {n:'Продающий текст',h:`${strip(['«Хотите зарабатывать больше? Не хватает денег на счета?» Плюс история героини, которая с этим столкнулась.','Рассказ о компании и продукте.','«Представьте, как изменится ваша жизнь со вторым доходом. Счета оплачены, долги погашены…» Текст переходит в настоящее время.','Снять сомнения (гарантия возврата), добавить срочность и дать призыв к действию.'])}<p class="small muted">Авторы приводят этот пример с иронией: так написаны тексты сомнительных схем быстрого заработка. Если в продающем тексте узнаётся АДАК, это повод перечитать его спокойно.</p>`},
+ {n:'Обратная связь',h:`<h4>Разговор с сотрудником о работе за год</h4>${strip(['Начни с хорошего и дождись, пока человек в нужном состоянии. Если весь год ты давал позитивную обратную связь, разговор пройдёт естественно.','Положи предмет разговора (например, форму отзыва) на стол. Сядь рядом с сотрудником, лицом к «проблеме». Говори про сделанное, человека не оценивай: «Что мы с тобой могли сделать, чтобы проект прошёл лучше?»','«Я знаю, ты отлично умеешь вести бюджет, я видел это на других проектах…»','«…на этом проекте был перерасход. Как можно было лучше удержать затраты?» В конце общий ресурс («мы очень довольны твоей работой») и общий коллапс («и я знаю, что дальше бюджет будет под контролем»).'])}`}
+];
+tabs('#lifeTabs','#lifePane',life,d=>d.h);
+
+/* ---------- troubleshoot ---------- */
+const ts=[
+ {q:'На вопрос «как хочешь себя чувствовать?» отвечает «не хочу бояться»',st:2,a:'Человек ещё в проблеме. Ресурсы ему недоступны, и он ищет их через проблему.',f:['Сбей состояние: вопрос мимо темы, движение, смех.','Спроси: «А когда ты не боишься, что ты чувствуешь?»','Используй жест «Так было раньше…» и смени свой темп.']},
+ {q:'Рассказывает о проблеме спокойно, в прошедшем времени',st:1,a:'Он говорит о событии со стороны. Нужная сеть не зажглась.',f:['Попроси один конкретный случай: когда, где, который час.','Переводи его слова в настоящее время.','Спроси, как в теле он понимает, что ему плохо.','Предложи фильм в натуральную величину и шагнуть внутрь.']},
+ {q:'Снова и снова пересказывает историю проблемы',st:2,a:'Каждый пересказ укрепляет старую дорожку. Человек застрял на шаге 1.',f:['Приём «Стоп!» с поднятой ладонью и объяснение про шоссе и тропу.','Рефрейм: «Когда это изменится, у тебя будет отличная история».','В следующий раз префрейм в начале сессии.']},
+ {q:'Говорит «я расслаблен», а пальцы теребят друг друга',st:3,a:'Неконгруэнтность. Сознание согласилось, тело ещё нет.',f:['Войди в ресурс сам, клиент последует.','Добавь детали: где в теле, цвет, движение.','Удвой ощущение, потом ещё раз.']},
+ {q:'Не может найти ни одного ресурса',st:3,a:'Возможны три причины: не вышел из проблемы, мешает скрытое убеждение («это не сработает») или низкая самооценка.',f:['Проверь, сделан ли шаг Д, и вернись к нему.','Возьми маленький ресурс и прогони много петель.','Предложи образ человека, который справился бы лучше.','Если сидит глубокое убеждение, сначала работай с ним.']},
+ {q:'В сессии ему отлично, а в жизни ничего не поменялось',st:4,a:'Ресурс не привязан к контексту. Классическая ошибка «круга совершенства за сто долларов».',f:['Начни с ассоциации в конкретный случай проблемы.','Обязательно сделай коллапс: из ресурса в тот самый контекст.','Пройди 3–5 разных случаев.','Повтори связку в естественном порядке: триггер, затем ресурс.']},
+ {q:'После коллапса говорит, что «всё так же»',st:4,a:'Ресурс слабее проблемы, случай был размытым или человек сортирует по сходству.',f:['Спроси прямо о различиях: «Что хоть немного иначе?»','Вернись на шаг 3 и усиль ресурс.','Вернись на шаг 1, найди один момент и точный триггер.']},
+ {q:'Клиент с фобией впадает в панику, едва начав рассказ',st:1,a:'Ассоциации даже слишком много. Сеть уже зажглась, дальше погружать не нужно.',f:['Сразу переходи к диссоциации, лучше двойной (кинобудка).','Держи дистанцию на протяжении всей работы.']}
+];
+const tsL=$('#tsList'),tsO=$('#tsOut');
+tsL.innerHTML=ts.map((t,i)=>`<button data-i="${i}">${t.q}</button>`).join('');
+function showTs(i){const t=ts[i];tsL.querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===i));
+ tsO.innerHTML=`<div class="pane"><span class="tag t${t.st}">Сбой на шаге ${t.st}: ${['','Ассоциация в проблему','Диссоциация','Ассоциация в ресурс','Коллапс'][t.st]}</span><h3 style="margin:14px 0 8px;font-size:20px">Что происходит</h3><p class="small">${t.a}</p><h3 style="margin:18px 0 8px;font-size:20px">Что сделать</h3><ol class="steps" style="--dot:var(--c${t.st})">${t.f.map(x=>`<li class="small">${x}</li>`).join('')}</ol></div>`;}
+tsL.querySelectorAll('button').forEach(b=>b.onclick=()=>showTs(+b.dataset.i));showTs(0);
+
+/* ---------- quiz ---------- */
+const qz=[
+ {q:'Что происходит на шаге «К»?',o:['Клиент забывает о проблеме','Ресурс и проблема активируются одновременно и связываются','Коуч подводит итоги сессии'],a:1,e:'Коллапс: человек в ресурсе мысленно возвращается к триггеру, и две нейросети горят вместе.'},
+ {q:'Клиент на вопрос о желаемом состоянии отвечает «не хочу паниковать». Что делать?',o:['Принять ответ и усиливать','Сначала диссоциировать, потом спросить снова','Сразу делать коллапс'],a:1,e:'Негативная формулировка значит, что человек ещё в проблеме и сортирует по ней. Нужен шаг Д.'},
+ {q:'Какой принцип лежит в основе коллапса?',o:['Закон Хебба','Правило 90 секунд','Квантовый эффект Зенона'],a:0,e:'«Нейроны, которые срабатывают вместе, связываются вместе». Правило 90 секунд работает на шаге Д.'},
+ {q:'Зачем ассоциировать человека в проблему, если он и так знает, что она есть?',o:['Чтобы он лучше её осознал','Чтобы зажечь нужную сеть, найти триггер и откалибровать состояние','Чтобы коуч проявил эмпатию'],a:1,e:'Пока сеть проблемы не активна, ресурсу некуда прикрепиться. Плюс ты видишь, как выглядит проблема, и находишь момент её запуска.'},
+ {q:'Сколько примерно живёт химическая волна эмоции, если её не подпитывать?',o:['Около 10 секунд','Около 90 секунд','Около 6 часов'],a:1,e:'Примерно полторы минуты. Шесть часов это окно реконсолидации памяти.'},
+ {q:'Подходит ли ресурс «чтобы муж перестал опаздывать»?',o:['Да, это позитивная цель','Нет, это вне контроля клиента','Да, если усилить его субмодальностями'],a:1,e:'Ресурс должен быть в зоне контроля человека. Лучше спросить: «Если он продолжит опаздывать, как ты хочешь себя чувствовать?»'},
+ {q:'Клиент говорит «мне спокойно», но качает ногой и теребит пальцы. Это значит…',o:['Шаг 3 пройден','Ресурс ещё не полный: нет конгруэнтности','Пора переходить к коллапсу'],a:1,e:'Слова и тело должны говорить одно и то же. Усиливай ресурс дальше.'},
+ {q:'Почему в классическом взмахе образ «нового я» остаётся диссоциированным?',o:['Это ошибка техники','Ресурс здесь это желание, а вход в результат снижает мотивацию','Чтобы клиент не испугался'],a:1,e:'Образ держат почти на расстоянии вытянутой руки, чтобы к нему хотелось тянуться.'},
+ {q:'Коуч провёл отличный круг совершенства. В кабинете клиенту прекрасно, в жизни ничего не изменилось. Чего не хватило?',o:['Более яркого круга','Ассоциации в контекст проблемы и коллапса','Ещё одной диссоциации'],a:1,e:'Ресурс не отнесли туда, где он нужен. Без шагов 1 и 4 изменение остаётся в кабинете.'},
+ {q:'«Мы никогда не сдадимся» в речи Черчилля это…',o:['Ассоциация в проблему','Ассоциация в ресурс','Коллапс'],a:2,e:'Вывод, который соединяет описанную силу с реальной угрозой. Перед ним шли «пали или могут пасть» (А), «мы пойдём до конца» (Д), «мы будем сражаться…» (А).'}
+];
+const qb=$('#quizBox');let score=0,answered=0;
+function renderQuiz(){score=0;answered=0;updScore();
+ qb.innerHTML=qz.map((q,i)=>`<div class="q" data-i="${i}"><div class="qt">${i+1}. ${q.q}</div><div class="opts">${q.o.map((o,j)=>`<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="fb"></div></div>`).join('');
+ qb.querySelectorAll('.q').forEach(el=>{const q=qz[+el.dataset.i];el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+  const j=+b.dataset.j;el.classList.add('done');el.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;if(k===q.a)x.classList.add('ok')});
+  if(j===q.a){score++;el.querySelector('.fb').innerHTML='✅ <b>Верно.</b> '+q.e}else{b.classList.add('bad');el.querySelector('.fb').innerHTML='↪️ <b>Правильный ответ отмечен зелёным.</b> '+q.e}
+  answered++;updScore();})});}
+function updScore(){$('#scoreTxt').textContent=score+' из '+qz.length+(answered===qz.length?(score>=8?' · отлично!':score>=5?' · хорошая база':' · перечитай шаги'):'');$('#scoreBar').style.width=(answered/qz.length*100)+'%';}
+$('#quizReset').onclick=renderQuiz;renderQuiz();
+})();
+</script>
+</body>
+</html>
